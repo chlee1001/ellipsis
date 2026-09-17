@@ -17,7 +17,7 @@ Deliverables: `Package.swift`, `Sources/Ellipsis/main.swift`, `scripts/bundle.sh
 5. Add `HiddenSets`: the hidden set, the always-hidden set, and `isHiddenSetShown`, persisted in `UserDefaults`.
 6. Add `AppState` for the other settings, backed by `UserDefaults` through `@AppStorage` keys.
 7. At launch, if the private classes do not exist, show an alert and quit.
-8. `scripts/run.sh`: bundle, copy to `/Applications/Ellipsis.app`, launch. `MenuBarAgent` only matches apps in `/Applications` (see `docs/phase0.md`).
+8. `scripts/run.sh`: bundle, copy to `/Applications`, launch. A debug build is `EllipsisDev.app` with the identifier `au.ronny.EllipsisDev`, so it runs next to a release build with its own settings. `MenuBarAgent` only matches apps in `/Applications` (see `docs/phase0.md`).
 
 Exit criteria: the app runs, shows the icon, and applies the persisted sets at launch.
 

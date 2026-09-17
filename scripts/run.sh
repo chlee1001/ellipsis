@@ -7,9 +7,10 @@ set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 app="$("$root/scripts/bundle.sh" "${1:-debug}")"
-target="/Applications/Ellipsis.app"
+name="$(basename "$app" .app)"
+target="/Applications/$name.app"
 
-pkill -x Ellipsis || true
+pkill -x "$name" || true
 rm -rf "$target"
 ditto "$app" "$target"
 open "$target"
