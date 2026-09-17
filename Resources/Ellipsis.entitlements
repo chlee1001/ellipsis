@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- No sandbox: the app loads the private MenuBarClientCore framework with
+	     dlopen. It is Apple-signed, so the hardened runtime permits it without
+	     a library-validation exception. -->
+</dict>
+</plist>
