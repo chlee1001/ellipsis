@@ -77,6 +77,25 @@ Exit criteria: acceptance criteria 1, 10 and 11 pass on a clean checkout.
 - Export and import settings — done. "Export…" and "Import…" buttons in General. `SettingsFile` writes the settings keys (not the shown state, not the Accessibility opt-out) to a plist through `NSSavePanel`, and reads one back through `NSOpenPanel`. Import checks each known key's type, ignores unknown keys, and writes key by key so AppKit's own keys in the domain stay. `AppState` and `HiddenSets` reload from the store afterwards.
 - Updates — done, with Sparkle 2 from SwiftPM. `Updater` wraps `SPUStandardUpdaterController` for the "Check for Updates…" menu item and the About section in General. `bundle.sh` copies `Sparkle.framework` into `Contents/Frameworks`, `sign-sparkle.sh` signs its XPC services and helpers for notarization, and `release.sh` writes `build/appcast.xml` with `generate_appcast`. `publish.sh` uploads the zip and the appcast to the GitHub release, and `SUFeedURL` reads the appcast from `releases/latest/download/`, so no other host is necessary. A debug build never checks on its own (`SUEnableAutomaticChecks` is false), so it does not replace itself with a release.
 
+## Phase 7: F8 — the floating bar
+
+Displays with a notch drop the shown items that do not fit. Spec F8. The bar works on every display, so every step but the spike is built and tested on the desktop.
+
+1. Spike on the laptop with a notch. Record the result in `docs/phase7.md` in the format of `docs/phase0.md`. Questions:
+   - What `MenuBarAgent` does with an item that does not fit right of the notch: not drawn, drawn left of the notch, or drawn under it.
+   - Whether `MenuBarLayout` reports a frame for such an item. The expectation is no.
+   - Whether a restriction that allows one app puts that app's item right of the notch.
+   - The frame of the Ellipsis icon window and `NSScreen.safeAreaInsets` on that display.
+2. Add `AppState.hiddenItemsPlacement` (`menuBar` or `floatingBar`) and the "Show hidden items" picker in General. The default comes from `NSScreen.safeAreaInsets.top` at first launch.
+3. Add `FloatingBarPlacement`: a pure function from the icon frame, the screen and the panel size to the panel frame. Unit tests.
+4. Add `FloatingBar`: the `NSPanel`, an `NSHostingView` with an `HStack` of 18-point app icons, tooltips, hover. It takes the bundle identifiers to show and a click handler.
+5. Change `MenuBarManager.applyCurrentState`. In bar mode, `isHiddenSetShown` keeps the restriction and shows the panel. The panel content is `sets.hidden`, plus `sets.alwaysHidden` when `isAlwaysHiddenSetShown`. `RehideMonitor` stays as it is: the panel is non-activating, so it causes no focus change, and its own clicks do not reach the global monitor. `RehidePolicy` must treat a click inside the panel frame as inside.
+6. Click-through. Keep the owner `AXUIElement` in `MenuBarLayout.Item` behind a `Sendable` wrapper. On a click in the bar: apply a restriction that hides every running app except the target and Ellipsis. Wait for the activation and a 400 ms settle (the `IconDivider` delay). Read the layout and `AXPress` the owner element with a 1 s messaging timeout. Close the panel. Poll `MenuBarGeometry.openMenuFrames()` every 300 ms. When no menu is open, `applyCurrentState()`.
+7. Without the Accessibility permission, the click applies the single-app restriction and arms the rehide. The tooltip says what the permission adds.
+8. Docs: README (feature and the app-icon limit), `docs/testing.md` checklist, this file.
+
+Exit criteria: on the laptop, a click on the icon shows every hidden app in the bar, a click on an app in the bar opens its menu, and the bar closes on each rehide condition.
+
 ## File layout
 
 ```
@@ -94,6 +113,12 @@ Sources/Ellipsis/
     RehideMonitor.swift
     RehidePolicy.swift
     MenuBarGeometry.swift
+    MenuBarLayout.swift
+    IconDivider.swift
+    DividerPolicy.swift
+    ClockZone.swift
+    FloatingBar.swift
+    FloatingBarPlacement.swift
   Settings/
     SettingsWindow.swift
     SettingsView.swift
@@ -117,6 +142,7 @@ docs/
   spec.md
   plan.md
   phase0.md
+  phase7.md
 ```
 
 ## Testing

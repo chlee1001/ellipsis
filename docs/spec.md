@@ -127,6 +127,21 @@ Off by default. When on, the Ellipsis icon divides the menu bar like the Bartend
 - Ellipsis reads the menu bar when the switch turns on, when the set is shown, after a Cmd-drag ends, and after an app launches. Turning the switch on hides whatever already sits left of the icon.
 - While the switch is on, the Hidden picker in Settings is read-only.
 
+### F8: The floating bar
+
+A notch splits the menu bar. `MenuBarAgent` never pushes an item off-screen, so a shown item that does not fit right of the notch is not drawn at all. On a display with a notch, "show" loses items. The floating bar shows the hidden apps in a panel below the menu bar instead. The restriction stays active and nothing in the menu bar moves.
+
+No image of an item is available. On macOS 27 the window server has no window per item, so the ScreenCaptureKit method of Ice (capture each item window) does not work. A capture of the menu bar region needs the Screen Recording permission, and it cannot capture an item that is not drawn. So the bar shows the app icon (`NSRunningApplication.icon`) of each hidden app. Hiding is per app, so one icon per app is the same granularity.
+
+- Settings › General has "Show hidden items": "In the menu bar" or "In a bar below the menu bar". The default is the bar when a screen has a notch (`NSScreen.safeAreaInsets.top` is more than zero), and the menu bar otherwise.
+- In bar mode, a click on the icon shows the panel with one icon per app in the hidden set. An Option click adds the always-hidden set. The icon changes to the chevron as it does today.
+- The panel is a non-activating `NSPanel` at the status bar level, on every Space and next to full-screen apps. Its right edge is under the Ellipsis icon. Its top is at the bottom edge of the menu bar. The frontmost app keeps the focus.
+- Each icon has a tooltip with the app name. A hover highlights it.
+- The rehide conditions of F3 close the panel: timeout, a click outside the panel and the menu bar, and a focus change.
+- A click on an icon opens the item of that app (click-through). This needs the Accessibility permission. Ellipsis applies a restriction that hides every app except that app and Ellipsis, so the item always fits next to the notch. Then it reads the menu bar (`MenuBarLayout`), finds the item, and presses it over Accessibility (`AXPress`). The panel closes. Ellipsis applies the normal restriction again when no menu is open.
+- Without the permission, a click on an icon applies the same single-app restriction and arms the rehide. The user clicks the item in the menu bar. The tooltip says that the Accessibility permission opens the item with one click.
+- An app with an item that changes (a timer, a meter) shows only its app icon in the bar. The README lists this limit.
+
 ## Build and distribution
 
 - `Package.swift` with one executable target. No external dependencies.
@@ -158,3 +173,4 @@ Off by default. When on, the Ellipsis icon divides the menu bar like the Bartend
 - Global mouse monitors (`NSEvent.addGlobalMonitorForEvents`) deliver mouse-move and mouse-down events with no Accessibility permission on macOS 27.0. Ellipsis depends on this for the clock hover and for F3 "click outside".
 - Open menus of other apps come from `CGWindowListCopyWindowInfo`, deprecated since macOS 14. Its replacement, `SCShareableContent`, needs Screen Recording. If the window list stops reporting pop-up menu windows, the menu-open guard for F3 stops working and a rehide can close a shown item's menu.
 - The default clock zone is 300 points, so hidden items show whenever the pointer is near the right end of the menu bar. The measured or clicked zone fixes that, but a clock that grows (a longer date format) can outgrow a clicked zone. The measured zone follows: it is read again when Settings opens.
+- The floating bar (F8) is built on displays without a notch. The behavior of `MenuBarAgent` with a notch on macOS 27 comes from one spike on one laptop (`docs/phase7.md`). The single-app restriction for click-through makes the visible items disappear for a moment. A later version can skip it when the item already fits.
