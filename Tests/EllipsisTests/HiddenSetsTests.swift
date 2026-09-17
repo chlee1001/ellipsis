@@ -48,3 +48,31 @@ struct HiddenSetsTests {
         #expect(second.isHiddenSetShown)
     }
 }
+
+@MainActor
+struct AlwaysHiddenShownTests {
+    private func makeSets() -> HiddenSets {
+        let name = "AlwaysHiddenShownTests.\(UUID().uuidString)"
+        let store = UserDefaults(suiteName: name)!
+        store.removePersistentDomain(forName: name)
+        let sets = HiddenSets(store: store)
+        sets.hidden = ["a"]
+        sets.alwaysHidden = ["b"]
+        return sets
+    }
+
+    @Test func showingAlwaysHiddenHidesNothing() {
+        let sets = makeSets()
+        sets.isHiddenSetShown = true
+        sets.isAlwaysHiddenSetShown = true
+        #expect(sets.identifiersToHide(isAlwaysHiddenEnabled: true).isEmpty)
+    }
+
+    @Test func alwaysHiddenShownIsNotPersisted() {
+        let name = "AlwaysHiddenShownTests.\(UUID().uuidString)"
+        let store = UserDefaults(suiteName: name)!
+        store.removePersistentDomain(forName: name)
+        HiddenSets(store: store).isAlwaysHiddenSetShown = true
+        #expect(HiddenSets(store: store).isAlwaysHiddenSetShown == false)
+    }
+}

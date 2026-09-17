@@ -1,8 +1,8 @@
 import Foundation
 import Observation
 
-/// The two sets of bundle identifiers Ellipsis hides, and whether the hidden
-/// set is currently shown. Persisted in `UserDefaults`.
+/// The two sets of bundle identifiers Ellipsis hides, and which of them are
+/// currently shown. The sets and `isHiddenSetShown` persist in `UserDefaults`.
 @MainActor
 @Observable
 final class HiddenSets {
@@ -33,11 +33,14 @@ final class HiddenSets {
         didSet { store.set(isHiddenSetShown, forKey: Key.isHiddenSetShown) }
     }
 
+    /// Not persisted: the always-hidden set hides again at every launch.
+    var isAlwaysHiddenSetShown = false
+
     /// The bundle identifiers a restriction must hide right now.
     /// Empty means no restriction is necessary.
     func identifiersToHide(isAlwaysHiddenEnabled: Bool) -> Set<String> {
         var result = isHiddenSetShown ? [] : hidden
-        if isAlwaysHiddenEnabled {
+        if isAlwaysHiddenEnabled, !isAlwaysHiddenSetShown {
             result.formUnion(alwaysHidden)
         }
         return result
