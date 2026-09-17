@@ -8,7 +8,7 @@ See `docs/phase0.md`. The large-length method failed. The assessment-mode restri
 
 Deliverables: `Package.swift`, `Sources/Ellipsis/main.swift`, `scripts/bundle.sh`, `Resources/Info.plist`, `docs/phase0.md`.
 
-## Phase 1: App skeleton
+## Phase 1: App skeleton — done
 
 1. Replace `main.swift` with `EllipsisApp.swift` (`@main`, SwiftUI `App`) and an `AppDelegate` via `NSApplicationDelegateAdaptor`.
 2. Add a `Settings` scene with an empty view.

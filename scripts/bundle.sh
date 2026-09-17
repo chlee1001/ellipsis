@@ -8,7 +8,7 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 bin="$(swift build -c "$config" --package-path "$root" --show-bin-path)/Ellipsis"
 app="$root/build/Ellipsis.app"
 
-swift build -c "$config" --package-path "$root"
+swift build -c "$config" --package-path "$root" >&2
 
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
