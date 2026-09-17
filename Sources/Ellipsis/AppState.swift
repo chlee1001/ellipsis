@@ -13,6 +13,7 @@ final class AppState {
         static let rehideOnFocusChange = "rehideOnFocusChange"
         static let rehideTimeout = "rehideTimeout"
         static let clockZoneWidth = "clockZoneWidth"
+        static let hidesAppsLeftOfIcon = "hidesAppsLeftOfIcon"
     }
 
     static let defaults: [String: Any] = [
@@ -22,6 +23,7 @@ final class AppState {
         Key.rehideOnFocusChange: false,
         Key.rehideTimeout: 15.0,
         Key.clockZoneWidth: 300.0,
+        Key.hidesAppsLeftOfIcon: false,
     ]
 
     static func registerDefaults(in store: UserDefaults = .standard) {
@@ -38,6 +40,7 @@ final class AppState {
         rehideOnFocusChange = store.bool(forKey: Key.rehideOnFocusChange)
         rehideTimeout = store.double(forKey: Key.rehideTimeout)
         clockZoneWidth = store.double(forKey: Key.clockZoneWidth)
+        hidesAppsLeftOfIcon = store.bool(forKey: Key.hidesAppsLeftOfIcon)
     }
 
     /// Reads every value from the store again, after an import wrote to it.
@@ -48,6 +51,7 @@ final class AppState {
         rehideOnFocusChange = store.bool(forKey: Key.rehideOnFocusChange)
         rehideTimeout = store.double(forKey: Key.rehideTimeout)
         clockZoneWidth = store.double(forKey: Key.clockZoneWidth)
+        hidesAppsLeftOfIcon = store.bool(forKey: Key.hidesAppsLeftOfIcon)
     }
 
     var isAlwaysHiddenEnabled: Bool {
@@ -71,5 +75,10 @@ final class AppState {
     /// Notification Center. See `ClockZone`.
     var clockZoneWidth: Double {
         didSet { store.set(clockZoneWidth, forKey: Key.clockZoneWidth) }
+    }
+    /// The Ellipsis icon is the divider: apps left of it are the hidden set.
+    /// Needs the Accessibility permission. See `IconDivider`.
+    var hidesAppsLeftOfIcon: Bool {
+        didSet { store.set(hidesAppsLeftOfIcon, forKey: Key.hidesAppsLeftOfIcon) }
     }
 }

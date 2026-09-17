@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: SettingsWindow?
     private var menuBar: MenuBarManager?
     private var clockZone: ClockZone?
+    private var divider: IconDivider?
 
     override init() {
         AppState.registerDefaults()
@@ -29,9 +30,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         permission.askAtLaunchIfNeeded()
         clockZone = ClockZone(state: state, permission: permission)
+        divider = IconDivider(state: state, sets: sets, permission: permission) { [weak menuBar] in
+            menuBar?.iconFrame
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        divider?.release()
         menuBar?.release()
     }
 

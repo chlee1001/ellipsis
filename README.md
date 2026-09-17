@@ -13,14 +13,14 @@ Ellipsis hides selected menu bar items on macOS 27. Click its icon to show them.
 1. Download `Ellipsis-X.Y.Z.zip` from [GitHub Releases](../../releases).
 2. Open the zip. Move `Ellipsis.app` to `/Applications`.
 3. Open Ellipsis. The `…` icon appears in the menu bar.
-4. Right-click the icon. Select "Settings…". Put apps in the hidden set.
+4. Right-click the icon. Select "Settings…". Put apps in the hidden set. Or, with the Accessibility permission, turn on "Hide apps left of the Ellipsis icon" and Cmd-drag items to the left of the icon.
 
 ## Limits
 
 - Private API. Ellipsis loads `MenuBarClientCore.framework` and uses its `MBAssessmentMode` classes. A macOS update can rename or remove them. Ellipsis checks for the classes at launch and shows an alert if they are missing.
 - Focus and the camera/microphone indicator are hidden while any set is hidden. No setting brings them back. This is a limit of the API.
 - The hidden sets hold whole apps, not single items. An app with two menu bar items hides both.
-- The app pickers in Settings list every running app, not only apps with a menu bar item. With the Accessibility permission, they list only apps with a menu bar item. The permission is optional. Ellipsis asks once at first launch, and again only from Settings.
+- The app pickers in Settings list every running app, not only apps with a menu bar item. With the Accessibility permission, they list only apps with a menu bar item, the icon can work as a divider (Cmd-drag items to its left to hide them), and the clock zone fits the clock. The permission is optional. Ellipsis asks once at first launch, and again only from Settings.
 
 ## Alternatives
 

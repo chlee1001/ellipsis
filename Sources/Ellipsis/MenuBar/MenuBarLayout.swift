@@ -38,6 +38,23 @@ struct MenuBarLayout: Sendable {
         return nil
     }
 
+    /// The app items on the display that holds `point`, split by their left
+    /// edge against `point.x`. Accessibility coordinates.
+    func appItems(splitAt point: CGPoint) -> (left: Set<String>, right: Set<String>)? {
+        guard let display = displays.first(where: { $0.frame.contains(point) }) else { return nil }
+        var left = Set<String>()
+        var right = Set<String>()
+        for item in display.items {
+            guard let id = item.bundleIdentifier else { continue }
+            if item.frame.minX < point.x {
+                left.insert(id)
+            } else {
+                right.insert(id)
+            }
+        }
+        return (left, right)
+    }
+
     /// Nil when MenuBarAgent is not running or refuses, as it does without
     /// the permission. Off the main thread: every read is an IPC.
     nonisolated static func read() -> MenuBarLayout? {

@@ -13,7 +13,19 @@ struct SettingsView: View {
                 GeneralSettings()
             }
             Tab("Hidden", systemImage: "eye.slash") {
+                @Bindable var state = state
                 Form {
+                    Section {
+                        Toggle("Hide apps left of the Ellipsis icon", isOn: $state.hidesAppsLeftOfIcon)
+                            .disabled(!permission.isTrusted)
+                        if !permission.isTrusted {
+                            LabeledContent("Needs the Accessibility permission") {
+                                Button("Grant Permission…", action: permission.ask)
+                            }
+                        }
+                    } footer: {
+                        Text("Cmd-drag items across the icon. Apps left of it join the hidden set. Apps right of it leave it when the set is shown. The always-hidden set is not affected.")
+                    }
                     Section {
                         AppPicker(
                             apps: apps.entries(including: sets.hidden),
@@ -24,8 +36,11 @@ struct SettingsView: View {
                     } header: {
                         Text("Hidden apps")
                     } footer: {
-                        Text("These apps hide until you click the Ellipsis icon.")
+                        Text(isDividerActive
+                            ? "The icon's position manages this list. Cmd-drag an item to change it."
+                            : "These apps hide until you click the Ellipsis icon.")
                     }
+                    .disabled(isDividerActive)
                 }
                 .formStyle(.grouped)
             }
@@ -57,6 +72,8 @@ struct SettingsView: View {
         }
         .onChange(of: permission.isTrusted) { apps.refresh() }
     }
+
+    private var isDividerActive: Bool { state.hidesAppsLeftOfIcon && permission.isTrusted }
 
     /// An app can be in one set only, so a check here removes it from the other set.
     private var hiddenSelection: Binding<Set<String>> {

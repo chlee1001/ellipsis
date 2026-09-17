@@ -71,6 +71,9 @@ final class MenuBarManager {
         }
     }
 
+    /// The icon's window frame in screen coordinates, for the divider.
+    var iconFrame: NSRect? { icon.button?.window?.frame }
+
     // MARK: Show and hide
 
     /// A normal click toggles the hidden set. An Option click toggles both sets.
