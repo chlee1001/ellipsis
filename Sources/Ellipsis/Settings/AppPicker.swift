@@ -12,7 +12,7 @@ struct AppPicker: View {
 
     var body: some View {
         if apps.isEmpty {
-            Text("No apps are running.")
+            Text("No apps with a menu bar item are running.")
                 .foregroundStyle(.secondary)
         }
         ForEach(apps) { app in

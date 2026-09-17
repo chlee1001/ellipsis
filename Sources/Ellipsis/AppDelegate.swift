@@ -4,6 +4,7 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let sets: HiddenSets
     private let state: AppState
+    private let permission = AccessibilityPermission()
     private var settingsWindow: SettingsWindow?
     private var menuBar: MenuBarManager?
 
@@ -25,6 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menuBar = MenuBarManager(restriction: restriction, sets: sets, state: state) { [unowned self] in
             showSettings()
         }
+        permission.askAtLaunchIfNeeded()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -33,7 +35,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showSettings() {
         if settingsWindow == nil {
-            settingsWindow = SettingsWindow(state: state, sets: sets)
+            settingsWindow = SettingsWindow(state: state, sets: sets, permission: permission)
         }
         settingsWindow?.show()
     }

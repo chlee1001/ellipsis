@@ -7,7 +7,7 @@ Ellipsis is a macOS menu bar item manager. It hides and shows menu bar items of 
 - Hide and show menu bar items with one click.
 - Keep an "always hidden" set of apps that you never want to see.
 - Rehide the items automatically after a timeout or after a click outside the menu bar.
-- Ask for no permission. No Accessibility, no Screen Recording, no Full Disk Access.
+- Need no permission to hide and show. No Screen Recording, no Full Disk Access. Accessibility is optional (see F6).
 - Build with SwiftPM and shell scripts only. No `.xcodeproj`, no Xcode GUI.
 - Ship a Developer ID signed and notarized `.app`.
 
@@ -45,7 +45,7 @@ MBAssessmentModeAssertion.activate(withConfiguration:completionHandler:)
 MBAssessmentModeAssertion.invalidate()
 ```
 
-While an assertion is active, `MenuBarAgent` shows only the apps and system items in the allow-list. Ellipsis puts every app except the hidden ones in the allow-list. Ellipsis puts every system item code (integers 0 to 40) in the allow-list. No permission is necessary. Thaw 3 use the same mechanism.
+While an assertion is active, `MenuBarAgent` shows only the apps and system items in the allow-list. Ellipsis puts every app except the hidden ones in the allow-list. Ellipsis puts every system item code (integers 0 to 40) in the allow-list. No permission is necessary. Thaw 3 uses the same mechanism.
 
 Known limits of this mechanism:
 
@@ -105,6 +105,15 @@ Open the window from a right-click menu on the Ellipsis icon. The same menu has 
 - Swift 6 language mode, strict concurrency.
 - Persist settings in `UserDefaults`.
 
+### F6: Optional Accessibility permission
+
+Without the permission, the app pickers (F4) list every running app. With it, Ellipsis asks each app over Accessibility (`AXExtrasMenuBar`) whether it has a menu bar item, and the pickers list only those apps. Hiding and showing work the same either way.
+
+- First launch: a dialog explains this and offers "Grant Permission" or "Not Now". "Grant Permission" adds Ellipsis to the Accessibility list and shows the system prompt. "Not Now" is stored and the dialog does not return at launch.
+- Settings › General shows "Granted", or a "Grant Permission…" button that opens the same dialog.
+- Ellipsis notices a change in System Settings at once, through the `com.apple.accessibility.api` distributed notification.
+- Ellipsis never uses Accessibility for anything else. The permission can later narrow the clock hover zone (see Open risks).
+
 ## Build and distribution
 
 - `Package.swift` with one executable target. No external dependencies.
@@ -116,7 +125,7 @@ Open the window from a right-click menu on the Ellipsis icon. The same menu has 
 
 ## Acceptance criteria
 
-1. A fresh install on macOS 27 shows the Ellipsis icon. macOS shows no permission prompt.
+1. A fresh install on macOS 27 shows the Ellipsis icon. Ellipsis shows one dialog that offers the optional Accessibility permission. "Not Now" is remembered. macOS shows no prompt of its own.
 2. Add an app to the hidden set. Its items disappear. Click the icon. The items return. Click again. The items disappear.
 3. Quit and relaunch. The hidden state and the sets are unchanged.
 4. Add an app to the always-hidden set. It stays hidden after a normal click. Option+click shows it.

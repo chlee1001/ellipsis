@@ -6,7 +6,9 @@ Numbers match the acceptance criteria in `docs/spec.md`.
 
 | # | Steps | Expect | Result |
 |---|---|---|---|
-| 1 | Fresh install, launch | Icon shows `…`. No permission prompt. | |
+| 1 | Fresh install, launch | Icon shows `…`. One Ellipsis dialog offers Accessibility. No macOS prompt. | |
+| 1a | Dialog: "Not Now". Quit. Relaunch. | No dialog. Settings › General shows "Grant Permission…". | |
+| 1b | Settings: "Grant Permission…", then turn Ellipsis on in System Settings › Accessibility. | Settings shows "Granted" without a relaunch. Hidden tab lists only apps with a menu bar item. | |
 | 2 | Put an app in the hidden set. Click the icon. Click again. | Items hide, show (`‹`), hide (`…`). | |
 | 3 | Show the set. Quit. Relaunch. | Set is still shown. Sets are unchanged. | |
 | 4 | Put an app in the always-hidden set. Click. Option+click. | Normal click keeps it hidden. Option+click shows it. | |
