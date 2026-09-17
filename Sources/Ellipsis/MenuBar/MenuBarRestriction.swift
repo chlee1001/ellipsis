@@ -49,6 +49,10 @@ final class MenuBarRestriction {
     /// Hides the given apps and shows every other running app and every system
     /// item. Replaces any assertion held before. The allow-list is a snapshot of
     /// the running apps, so call this again when an app launches.
+    ///
+    /// Activation is asynchronous. The newest assertion wins while several are
+    /// alive, so the old one stays until the new one reports back. Invalidating
+    /// it earlier drops every restriction for a moment and every item flashes.
     func apply(hiddenBundleIdentifiers hidden: Set<String>) {
         let running = NSWorkspace.shared.runningApplications.compactMap(\.bundleIdentifier)
         let allowed = Set(running).subtracting(hidden).sorted()
@@ -59,16 +63,15 @@ final class MenuBarRestriction {
                      with: Self.allSystemItems as NSArray, with: allowed as NSArray)?
             .takeUnretainedValue()
         let assertion = assertionClass.init()
+        nonisolated(unsafe) let previous = self.assertion
         let completion: @convention(block) (Any?) -> Void = { error in
             if let error {
                 NSLog("Ellipsis: restriction failed: %@", String(describing: error))
             }
+            _ = previous?.perform(NSSelectorFromString("invalidate"))
         }
         _ = assertion.perform(NSSelectorFromString("activateWithConfiguration:completionHandler:"),
                               with: configuration, with: completion)
-
-        // Activate the new one before the old one goes so items do not flash.
-        release()
         self.assertion = assertion
     }
 

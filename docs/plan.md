@@ -21,17 +21,17 @@ Deliverables: `Package.swift`, `Sources/Ellipsis/main.swift`, `scripts/bundle.sh
 
 Exit criteria: the app runs, shows the icon, and applies the persisted sets at launch.
 
-## Phase 2: F1 and F2 — hide, show, always-hidden
+## Phase 2: F1 and F2 — hide, show, always-hidden — done
 
 1. Implement `MenuBarManager.toggle()`. Hidden: restriction hides both sets. Shown: restriction hides only the always-hidden set. Shown with Option: no restriction.
-2. Icon image switches between `…` and `‹`. Use the Ellipsis asset from Ice (`Ice/Assets.xcassets/ControlItemImages/Ellipsis`) as the default `…` image. Use SF Symbol `chevron.left` for `‹`.
+2. Icon image switches between `…` and `‹`. Use SF Symbols `ellipsis` and `chevron.left`. Ice is GPL-3, so its Ellipsis asset stays out of this repository.
 3. Persist `isHiddenSetShown` and restore it at launch.
 4. Right-click on the icon opens an `NSMenu` with "Show always-hidden items", "Settings…", "Quit".
-5. Setting: always-hidden set on or off. Off means the always-hidden set is never hidden.
+5. Setting: always-hidden set on or off. Off means the always-hidden set is never hidden. `MenuBarManager` observes the sets and this setting with `withObservationTracking`, so any writer, including the Settings window, changes the restriction at once.
 6. Release the restriction on quit (`applicationWillTerminate`).
-7. Test the clock click under a restriction (acceptance criterion 8). If it fails, add a global mouse-down monitor. On a mouse-down in the menu bar that is not on the Ellipsis icon, release the restriction for one second, then apply it again.
+7. Clock click under a restriction fails (acceptance criterion 8), and `MenuBarAgent` decides at mouse-down, so a release on mouse-down is too late. A global mouse-move monitor releases the restriction while the pointer is in the trailing 300 points of the menu bar. The clock frame is not readable, see `docs/spec.md`.
 
-Exit criteria: acceptance criteria 2, 3, 4, 8 and 9 pass.
+Exit criteria: acceptance criteria 2, 3, 4, 8 and 9 pass. Checklist in `docs/testing.md`.
 
 ## Phase 3: F3 — auto-rehide
 
@@ -67,7 +67,8 @@ Exit criteria: acceptance criteria 1, 10 and 11 pass on a clean checkout.
 
 ## Phase 6: Polish (optional)
 
-- Position-based sets: ask the user to select the `MenuBarAgent` layout table in a file panel once. Then apps left of an Ellipsis divider item join the hidden set. This restores the Cmd+drag workflow.
+- Position-based sets: ask the user to select the `MenuBarAgent` layout table in a file panel once. The XPC route (`getPreferredTrailingItemPositions:`) needs a private entitlement, so the file panel stays. Then apps left of an Ellipsis divider item join the hidden set. This restores the Cmd+drag workflow.
+- Clock zone calibration: a "click the clock" step in Settings narrows the hover zone to the clock.
 - Sparkle or manual update check. Not in v1.
 
 ## File layout

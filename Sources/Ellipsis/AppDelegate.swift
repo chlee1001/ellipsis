@@ -2,10 +2,19 @@ import AppKit
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private(set) var menuBar: MenuBarManager?
+    private let sets: HiddenSets
+    private let state: AppState
+    private var settingsWindow: SettingsWindow?
+    private var menuBar: MenuBarManager?
+
+    override init() {
+        AppState.registerDefaults()
+        sets = HiddenSets()
+        state = AppState()
+        super.init()
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        AppState.registerDefaults()
         let restriction: MenuBarRestriction
         do {
             restriction = try MenuBarRestriction()
@@ -13,15 +22,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Self.quit(with: error)
             return
         }
-        menuBar = MenuBarManager(
-            restriction: restriction,
-            sets: HiddenSets(),
-            state: AppState()
-        )
+        menuBar = MenuBarManager(restriction: restriction, sets: sets, state: state) { [unowned self] in
+            showSettings()
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         menuBar?.release()
+    }
+
+    private func showSettings() {
+        if settingsWindow == nil {
+            settingsWindow = SettingsWindow(state: state, sets: sets)
+        }
+        settingsWindow?.show()
     }
 
     private static func quit(with error: Error) {

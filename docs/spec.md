@@ -53,6 +53,9 @@ Known limits of this mechanism:
 - Focus and the camera/microphone indicator are hidden while a restriction is active. No system item code brings them back.
 - The framework is private. Ellipsis loads it with `dlopen` and checks that the classes exist at launch. If they do not exist, Ellipsis shows an alert and quits.
 - The `allowedSystemItems` codes are undocumented. Code 2 is the clock, code 6 is Wi-Fi, code 8 is Control Center.
+- Notification Center does not open from a clock click while a restriction is active. Control Center and Wi-Fi menus do open. No system item code changes this (tested 0 to 2000). `MenuBarAgent` decides at mouse-down, so a release on mouse-down is too late. Ellipsis releases the restriction while the pointer is in the trailing 300 points of the menu bar, and applies it again 0.5 seconds after the pointer leaves. Hidden items show while the pointer is there.
+- The clock frame is not readable. `MenuBarAgent` has a utilities service (`listMenuBarItemsForSpaceID:`, `getPreferredTrailingItemPositions:`) but it needs the private entitlement `com.apple.private.menubar.utilities`. The window server exposes no window per item.
+- Activation is asynchronous. The newest assertion wins while several are alive, and an `invalidate` of an older one leaves the newer one intact. Ellipsis keeps the old assertion until the new one reports back, or every item flashes for a moment.
 - `MenuBarAgent` matches the allow-list only against apps that run from `/Applications`. An app that runs from another folder is always hidden while a restriction is active. This includes Ellipsis itself. The Ellipsis icon disappears if Ellipsis runs from a build folder.
 
 Ellipsis releases the restriction when it shows the hidden set. Ellipsis holds a restriction that hides only the always-hidden set when it shows the hidden set with a normal click.
@@ -120,7 +123,7 @@ Open the window from a right-click menu on the Ellipsis icon. The same menu has 
 5. Show the set, wait for the timeout. The set hides itself.
 6. Show the set, click on the desktop. The set hides itself.
 7. Show the set, open the menu of a shown item. The set does not hide while the menu is open.
-8. While the hidden set is hidden, click the clock. Notification Center opens.
+8. While the hidden set is hidden, move the pointer to the clock and click. Notification Center opens.
 9. Quit Ellipsis. Every item returns.
 10. `spctl --assess` and `stapler validate` pass on the release build.
 11. `swift build` and all scripts run from a terminal with no Xcode project.
@@ -129,6 +132,6 @@ Open the window from a right-click menu on the Ellipsis icon. The same menu has 
 
 - Private API. A macOS 27 point release can rename or remove the `MBAssessmentMode*` classes. Ellipsis checks for them at launch.
 - The `/Applications` rule comes from a test on one machine. Other folders that LaunchServices registers, such as `~/Applications`, are not tested.
-- Clock click under a restriction is not tested yet (criterion 8). Bartender 7 releases its restriction around a clock click. If the click fails, Ellipsis must do the same with a global mouse monitor.
 - If Ellipsis crashes, `MenuBarAgent` drops the restriction when the XPC connection closes. This needs a test.
-- Global mouse monitors (`NSEvent.addGlobalMonitorForEvents`) for click-outside detection work without Accessibility permission for mouse events. If macOS 27 changes this, F3 "click outside" needs Accessibility permission and an onboarding step.
+- Global mouse monitors (`NSEvent.addGlobalMonitorForEvents`) deliver mouse-move and mouse-down events with no Accessibility permission on macOS 27.0. Ellipsis depends on this for the clock hover and for F3 "click outside".
+- The clock hover zone is a fixed 300 points. A menu bar with many items right of the clock puts the clock outside the zone. A one-time "click the clock" calibration in Settings can fix that later.
