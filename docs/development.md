@@ -10,7 +10,7 @@ mise run test
 mise run run
 ```
 
-`mise run run` bundles a debug build as `EllipsisDev.app` with the identifier `au.ronny.EllipsisDev`, signs it with your Developer ID (ad hoc without one), copies it to `/Applications` and opens it. The Developer ID keeps the signature stable across builds, so the Accessibility grant for the debug build survives a rebuild. The debug build has its own settings and its own row in the Accessibility list, so it runs next to a release `Ellipsis.app`. Without mise, use `swift build`, `swift test` and `scripts/run.sh`.
+`mise run run` bundles a debug build as `EllipsisDev.app` with the identifier `au.ronny.EllipsisDev`, signs it with your Developer ID (ad hoc without one), copies it to `/Applications` and opens it. The Developer ID keeps the signature stable across builds, so the Accessibility grant for the debug build survives a rebuild. The debug build has its own settings and its own row in the Accessibility list, so it runs next to a release `Ellipsis.app`. `mise run install` does the same with a release build as `Ellipsis.app`, signed but not notarized. Without mise, use `swift build`, `swift test`, `scripts/run.sh` and `scripts/run.sh release`.
 
 ## Make a release
 

@@ -11,8 +11,12 @@ description = "Rebuild Resources/AppIcon.icns from Resources/AppIcon.png"
 run = "scripts/make-icon.sh"
 
 [tasks.run]
-description = "Bundle a debug build, install it to /Applications, and open it"
+description = "Bundle a debug build as EllipsisDev.app, install it to /Applications, and open it"
 run = "scripts/run.sh"
+
+[tasks.install]
+description = "Bundle a release build as Ellipsis.app, install it to /Applications, and open it"
+run = "scripts/run.sh release"
 
 [tasks.tag]
 description = "Tag the parent of @ as vX.Y.Z and push the tag"
