@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
-# Assemble the app bundle from the SwiftPM binary and sign it ad hoc.
+# Assemble the app bundle from the SwiftPM binary and sign it.
 # A debug build is build/EllipsisDev.app with the identifier
 # au.ronny.EllipsisDev, so it sits next to the release app in /Applications
 # and in the Accessibility list, with its own settings. A release build is
-# build/Ellipsis.app with au.ronny.Ellipsis.
+# build/Ellipsis.app with au.ronny.Ellipsis; sign.sh signs it for release.
+# The signature here uses the first Developer ID Application identity in the
+# keychain, or ad hoc without one. An ad hoc signature changes with every
+# build, and macOS ties the Accessibility grant to the signature, so an ad
+# hoc debug build loses the permission at every rebuild.
 # Usage: scripts/bundle.sh [debug|release]   (default: debug)
 # VERSION and BUILD override CFBundleShortVersionString and CFBundleVersion.
+# DEVELOPER_ID names the identity.
 set -euo pipefail
 
 config="${1:-debug}"
@@ -33,5 +38,10 @@ plutil -replace CFBundleIdentifier -string "$identifier" "$plist"
 [[ -z "${VERSION:-}" ]] || plutil -replace CFBundleShortVersionString -string "$VERSION" "$plist"
 [[ -z "${BUILD:-}" ]] || plutil -replace CFBundleVersion -string "$BUILD" "$plist"
 
-codesign --force --sign - --identifier "$identifier" "$app"
+identity="${DEVELOPER_ID:-}"
+if [[ -z "$identity" ]]; then
+  identity="$(security find-identity -v -p codesigning |
+    sed -n 's/.*"\(Developer ID Application: [^"]*\)".*/\1/p' | head -1)"
+fi
+codesign --force --sign "${identity:--}" --identifier "$identifier" "$app"
 echo "$app"
