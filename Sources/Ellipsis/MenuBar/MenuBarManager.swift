@@ -10,6 +10,7 @@ final class MenuBarManager {
     let state: AppState
 
     private let restriction: MenuBarRestriction
+    private let rehide: RehideMonitor
     private let openSettingsHandler: () -> Void
     private let icon = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private var launchObserver: Task<Void, Never>?
@@ -46,6 +47,7 @@ final class MenuBarManager {
         self.sets = sets
         self.state = state
         self.openSettingsHandler = openSettings
+        self.rehide = RehideMonitor(state: state, sets: sets)
 
         icon.autosaveName = "ellipsis.icon"
         if let button = icon.button {
@@ -82,13 +84,11 @@ final class MenuBarManager {
     }
 
     func show(includingAlwaysHidden: Bool) {
-        sets.isHiddenSetShown = true
-        sets.isAlwaysHiddenSetShown = includingAlwaysHidden
+        sets.show(includingAlwaysHidden: includingAlwaysHidden)
     }
 
     func hide() {
-        sets.isHiddenSetShown = false
-        sets.isAlwaysHiddenSetShown = false
+        sets.hide()
     }
 
     func applyCurrentState() {
@@ -99,9 +99,20 @@ final class MenuBarManager {
             restriction.apply(hiddenBundleIdentifiers: hidden)
         }
         icon.button?.image = sets.isHiddenSetShown ? Self.shownImage : Self.hiddenImage
+
+        // Arm once per show, not on every reapply, so the timeout is not reset
+        // by unrelated changes such as the clock hover.
+        if sets.isHiddenSetShown {
+            if !rehide.isArmed {
+                rehide.arm()
+            }
+        } else {
+            rehide.disarm()
+        }
     }
 
     func release() {
+        rehide.disarm()
         launchObserver?.cancel()
         clockHoverRestore?.cancel()
         if let pointerMonitor {
@@ -149,7 +160,7 @@ final class MenuBarManager {
     }
 
     private func pointerMoved(to point: NSPoint) {
-        let inZone = Self.isInClockZone(point)
+        let inZone = MenuBarGeometry.current.clockZoneContains(point, width: Self.clockZoneWidth)
         guard inZone != isPointerInClockZone else { return }
         isPointerInClockZone = inZone
         clockHoverRestore?.cancel()
@@ -161,18 +172,6 @@ final class MenuBarManager {
                 guard !Task.isCancelled else { return }
                 self?.applyCurrentState()
             }
-        }
-    }
-
-    private static func isInClockZone(_ point: NSPoint) -> Bool {
-        NSScreen.screens.contains { screen in
-            let frame = screen.frame
-            let height = frame.maxY - screen.visibleFrame.maxY
-            let zone = NSRect(
-                x: frame.maxX - clockZoneWidth, y: frame.maxY - height,
-                width: clockZoneWidth, height: height
-            )
-            return zone.contains(point)
         }
     }
 

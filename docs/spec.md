@@ -134,4 +134,5 @@ Open the window from a right-click menu on the Ellipsis icon. The same menu has 
 - The `/Applications` rule comes from a test on one machine. Other folders that LaunchServices registers, such as `~/Applications`, are not tested.
 - If Ellipsis crashes, `MenuBarAgent` drops the restriction when the XPC connection closes. This needs a test.
 - Global mouse monitors (`NSEvent.addGlobalMonitorForEvents`) deliver mouse-move and mouse-down events with no Accessibility permission on macOS 27.0. Ellipsis depends on this for the clock hover and for F3 "click outside".
+- Open menus of other apps come from `CGWindowListCopyWindowInfo`, deprecated since macOS 14. Its replacement, `SCShareableContent`, needs Screen Recording. If the window list stops reporting pop-up menu windows, the menu-open guard for F3 stops working and a rehide can close a shown item's menu.
 - The clock hover zone is a fixed 300 points. A menu bar with many items right of the clock puts the clock outside the zone. A one-time "click the clock" calibration in Settings can fix that later.

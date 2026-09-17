@@ -33,15 +33,16 @@ Exit criteria: the app runs, shows the icon, and applies the persisted sets at l
 
 Exit criteria: acceptance criteria 2, 3, 4, 8 and 9 pass. Checklist in `docs/testing.md`.
 
-## Phase 3: F3 — auto-rehide
+## Phase 3: F3 — auto-rehide — done
 
-1. `RehideTimer`: a `Task` that sleeps for the timeout, then calls `hide`. Cancel it on manual hide.
-2. Click outside: `NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown])`. If the click is not inside the menu bar frame, call `hide`.
-3. Focus change: observe `NSWorkspace.didActivateApplicationNotification` and `activeSpaceDidChangeNotification`.
-4. Menu-open guard: track the menu bar with `NSMenu.didBeginTrackingNotification` and `didEndTrackingNotification`. Do not hide while a menu is open. Retry after it closes.
-5. Settings for each condition and the timeout value.
+1. `RehideMonitor`: armed when the hidden set becomes shown, disarmed when it hides. A timer `Task` sleeps for the timeout, then hides. A settings change while armed reinstalls the monitors.
+2. Click outside: `NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown])`. A click in the menu bar or inside an open menu does not hide. Works with no Accessibility permission.
+3. Focus change: `NSWorkspace.didActivateApplicationNotification` (not for Ellipsis itself) and `activeSpaceDidChangeNotification`.
+4. Menu-open guard: `NSMenu.didBeginTrackingNotification` only fires for menus in the Ellipsis process, so other apps' status item menus are found with `CGWindowListCopyWindowInfo`. A window at the pop-up menu level whose top edge touches the menu bar is an open menu. Deprecated since macOS 14 but needs no permission, unlike `SCShareableContent`. A hide that finds a menu open retries every 300 ms.
+5. `RehidePolicy` holds the pure decisions, with tests. `MenuBarGeometry` holds the menu bar frames and the clock zone.
+6. Settings: three switches and the timeout stepper.
 
-Exit criteria: acceptance criteria 5, 6 and 7 pass. Make sure that step 2 works with no Accessibility permission. If it does not, add a permission prompt and note it in the spec.
+Exit criteria: acceptance criteria 5, 6 and 7 pass.
 
 ## Phase 4: F4 — Settings window
 
@@ -84,6 +85,8 @@ Sources/Ellipsis/
     MenuBarRestriction.swift
     HiddenSets.swift
     RehideMonitor.swift
+    RehidePolicy.swift
+    MenuBarGeometry.swift
   Settings/
     SettingsView.swift
     AppPicker.swift
@@ -104,6 +107,6 @@ docs/
 
 ## Testing
 
-- Unit tests for `HiddenSets` (which bundle identifiers a state produces), `AppState` defaults, and `RehideMonitor` decision logic (pure functions: "given this event and this frame, hide or not").
+- Unit tests for `HiddenSets` (which bundle identifiers a state produces), `AppState` defaults, and `RehidePolicy` (pure functions: "given this click, these menus and this frame, hide or not").
 - Manual tests for the acceptance criteria. Keep a checklist in `docs/testing.md` after Phase 2.
 - `MenuBarRestriction` talks to `MenuBarAgent`. Do not mock it. Test it by hand.
