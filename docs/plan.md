@@ -44,16 +44,16 @@ Exit criteria: acceptance criteria 2, 3, 4, 8 and 9 pass. Checklist in `docs/tes
 
 Exit criteria: acceptance criteria 5, 6 and 7 pass.
 
-## Phase 4: F4 — Settings window
+## Phase 4: F4 — Settings window — done
 
-1. `SettingsView` with a `Form`: launch at login, always-hidden switch, three rehide switches, timeout stepper.
-2. `AppPicker`: a list of running apps from `NSWorkspace.shared.runningApplications` with a checkbox per app. Show the app icon and name. Filter to `.regular` and `.accessory` activation policies. Refresh on `NSWorkspace.didLaunchApplicationNotification` and `didTerminateApplicationNotification`. Keep checked apps in the list after they quit.
-3. Two `AppPicker` instances: hidden set and always-hidden set. An app can be in one set only.
-4. Launch at login through `SMAppService.mainApp`.
+1. `SettingsView` is a `TabView`: General (launch at login, rehide switches, timeout stepper, About), Hidden (app picker), Always Hidden (the enable switch and an app picker).
+2. `RunningApps`: the running apps from `NSWorkspace.shared.runningApplications` with a `.regular` or `.accessory` activation policy, minus Ellipsis. Refreshes on `didLaunchApplicationNotification` and `didTerminateApplicationNotification`. An app in a set that is not running stays listed, with its name and icon from LaunchServices, so the user can uncheck it.
+3. `AppPicker`: rows for a `Form` section, one checkbox per app with icon and name. An app can be in one set only: a check in one set removes the app from the other. The row shows which set holds the app.
+4. `LaunchAtLogin` wraps `SMAppService.mainApp`. The service status is the source of truth. `requiresApproval` shows a button that opens Login Items in System Settings.
 5. About section: version from `Bundle.main`, quit button.
-6. Open the window from the right-click menu. Bring the app to the front when the window opens.
+6. The right-click menu opens the window and activates the app (Phase 2).
 
-Exit criteria: every control changes behavior at once, no restart.
+Exit criteria: every control changes behavior at once, no restart. `MenuBarManager` observes the sets and `AppState`, so a checkbox changes the restriction on the spot.
 
 ## Phase 5: Release pipeline
 
@@ -70,6 +70,7 @@ Exit criteria: acceptance criteria 1, 10 and 11 pass on a clean checkout.
 
 - Position-based sets: ask the user to select the `MenuBarAgent` layout table in a file panel once. The XPC route (`getPreferredTrailingItemPositions:`) needs a private entitlement, so the file panel stays. Then apps left of an Ellipsis divider item join the hidden set. This restores the Cmd+drag workflow.
 - Clock zone calibration: a "click the clock" step in Settings narrows the hover zone to the clock.
+- Export and import settings: "Export…" and "Import…" buttons in General. Export writes `UserDefaults.standard.persistentDomain(forName:)` to a plist through `NSSavePanel`. Import reads a plist through `NSOpenPanel`, checks the keys, and calls `setPersistentDomain`. `AppState` and `HiddenSets` reload from the store afterwards. This is a wrapper around `defaults export` and `defaults import` for `au.ronny.Ellipsis`.
 - Sparkle or manual update check. Not in v1.
 
 ## File layout
@@ -88,8 +89,11 @@ Sources/Ellipsis/
     RehidePolicy.swift
     MenuBarGeometry.swift
   Settings/
+    SettingsWindow.swift
     SettingsView.swift
     AppPicker.swift
+    RunningApps.swift
+    LaunchAtLogin.swift
 Resources/
   Info.plist
   Ellipsis.entitlements

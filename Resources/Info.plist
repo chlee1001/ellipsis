@@ -7,7 +7,7 @@
 	<key>CFBundleExecutable</key>
 	<string>Ellipsis</string>
 	<key>CFBundleIdentifier</key>
-	<string>to.haryan.Ellipsis</string>
+	<string>au.ronny.Ellipsis</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>

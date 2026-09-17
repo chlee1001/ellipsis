@@ -16,5 +16,5 @@ cp "$bin" "$app/Contents/MacOS/Ellipsis"
 cp "$root/Resources/Info.plist" "$app/Contents/Info.plist"
 echo -n "APPL????" > "$app/Contents/PkgInfo"
 
-codesign --force --sign - --identifier to.haryan.Ellipsis "$app"
+codesign --force --sign - --identifier au.ronny.Ellipsis "$app"
 echo "$app"
