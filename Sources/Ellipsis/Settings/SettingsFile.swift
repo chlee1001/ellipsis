@@ -14,6 +14,7 @@ enum SettingsFile {
         AppState.Key.rehideOnClickOutside: .bool,
         AppState.Key.rehideOnFocusChange: .bool,
         AppState.Key.rehideTimeout: .number,
+        AppState.Key.clockZoneWidth: .number,
         HiddenSets.Key.hidden: .stringArray,
         HiddenSets.Key.alwaysHidden: .stringArray,
     ]

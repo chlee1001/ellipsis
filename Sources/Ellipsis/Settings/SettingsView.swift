@@ -127,6 +127,7 @@ private struct GeneralSettings: View {
                     ? "The app pickers list only the apps that have a menu bar item."
                     : "Optional. With it, the app pickers list only the apps that have a menu bar item.")
             }
+            ClockZoneSection()
             SettingsFileSection()
             Section("About") {
                 LabeledContent("Version", value: Self.version)
@@ -195,4 +196,40 @@ private struct SettingsFileSection: View {
         alert.informativeText = error.localizedDescription
         alert.runModal()
     }
+}
+
+/// The trailing zone of the menu bar where hidden items show, so that a
+/// clock click opens Notification Center. Measured from the clock item with
+/// the Accessibility permission, or from one click on the clock without it.
+private struct ClockZoneSection: View {
+    @Environment(AppState.self) private var state
+    @Environment(ClockZone.self) private var clockZone
+
+    var body: some View {
+        Section {
+            LabeledContent("Clock zone") {
+                if clockZone.isWaitingForClick {
+                    Text("Click the left edge of the clock")
+                        .foregroundStyle(.secondary)
+                    Button("Cancel", action: clockZone.cancelClick)
+                } else {
+                    Text(clockZone.isMeasured ? "\(width) points, measured" : "\(width) points")
+                        .foregroundStyle(.secondary)
+                    if !clockZone.isMeasured {
+                        Button("Click the Clock…", action: clockZone.waitForClick)
+                    }
+                    if !clockZone.isMeasured, state.clockZoneWidth != ClockZone.defaultWidth {
+                        Button("Reset", action: clockZone.reset)
+                    }
+                }
+            }
+        } footer: {
+            Text(clockZone.isMeasured
+                ? "Hidden items show while the pointer is over the clock, so that a click opens Notification Center."
+                : "Hidden items show while the pointer is in the trailing \(width) points of the menu bar, so that a clock click opens Notification Center. Click the clock once to fit the zone to it.")
+        }
+        .onAppear(perform: clockZone.measureIfTrusted)
+    }
+
+    private var width: Int { Int(state.clockZoneWidth) }
 }

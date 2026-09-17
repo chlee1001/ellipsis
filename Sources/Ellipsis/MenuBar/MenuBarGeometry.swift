@@ -24,6 +24,11 @@ struct MenuBarGeometry: Sendable {
         frames.contains { $0.contains(point) }
     }
 
+    /// The menu bar under `point`, if any.
+    func frame(containing point: NSPoint) -> NSRect? {
+        frames.first { $0.contains(point) }
+    }
+
     /// The trailing `width` points of any menu bar, where the clock lives.
     func clockZoneContains(_ point: NSPoint, width: CGFloat) -> Bool {
         frames.contains { bar in

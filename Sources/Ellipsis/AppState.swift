@@ -12,6 +12,7 @@ final class AppState {
         static let rehideOnClickOutside = "rehideOnClickOutside"
         static let rehideOnFocusChange = "rehideOnFocusChange"
         static let rehideTimeout = "rehideTimeout"
+        static let clockZoneWidth = "clockZoneWidth"
     }
 
     static let defaults: [String: Any] = [
@@ -20,6 +21,7 @@ final class AppState {
         Key.rehideOnClickOutside: true,
         Key.rehideOnFocusChange: false,
         Key.rehideTimeout: 15.0,
+        Key.clockZoneWidth: 300.0,
     ]
 
     static func registerDefaults(in store: UserDefaults = .standard) {
@@ -35,6 +37,7 @@ final class AppState {
         rehideOnClickOutside = store.bool(forKey: Key.rehideOnClickOutside)
         rehideOnFocusChange = store.bool(forKey: Key.rehideOnFocusChange)
         rehideTimeout = store.double(forKey: Key.rehideTimeout)
+        clockZoneWidth = store.double(forKey: Key.clockZoneWidth)
     }
 
     /// Reads every value from the store again, after an import wrote to it.
@@ -44,6 +47,7 @@ final class AppState {
         rehideOnClickOutside = store.bool(forKey: Key.rehideOnClickOutside)
         rehideOnFocusChange = store.bool(forKey: Key.rehideOnFocusChange)
         rehideTimeout = store.double(forKey: Key.rehideTimeout)
+        clockZoneWidth = store.double(forKey: Key.clockZoneWidth)
     }
 
     var isAlwaysHiddenEnabled: Bool {
@@ -61,5 +65,11 @@ final class AppState {
     /// Seconds. 1–300.
     var rehideTimeout: Double {
         didSet { store.set(rehideTimeout, forKey: Key.rehideTimeout) }
+    }
+    /// Points from the right edge of the menu bar. The restriction lifts
+    /// while the pointer is in this zone, so that a clock click opens
+    /// Notification Center. See `ClockZone`.
+    var clockZoneWidth: Double {
+        didSet { store.set(clockZoneWidth, forKey: Key.clockZoneWidth) }
     }
 }

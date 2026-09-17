@@ -8,7 +8,7 @@ final class SettingsWindow {
     private let apps: RunningApps
     private let loginItem = LaunchAtLogin()
 
-    init(state: AppState, sets: HiddenSets, permission: AccessibilityPermission) {
+    init(state: AppState, sets: HiddenSets, permission: AccessibilityPermission, clockZone: ClockZone) {
         apps = RunningApps(permission: permission)
         let content = SettingsView()
             .environment(state)
@@ -16,6 +16,7 @@ final class SettingsWindow {
             .environment(apps)
             .environment(loginItem)
             .environment(permission)
+            .environment(clockZone)
         let host = NSHostingController(rootView: content)
         host.sizingOptions = .preferredContentSize
         window = NSWindow(

@@ -142,14 +142,11 @@ final class MenuBarManager {
 
     // MARK: Clock hover
 
-    /// Width of the trailing menu bar zone that holds the clock.
-    private static let clockZoneWidth: CGFloat = 300
-
     /// Notification Center does not open from a clock click while a
     /// restriction is active, and MenuBarAgent decides that at mouse-down.
-    /// The clock frame is not readable without a private entitlement, so the
-    /// restriction lifts while the pointer is in the trailing zone of the menu
-    /// bar and returns shortly after it leaves.
+    /// So the restriction lifts while the pointer is in the trailing zone of
+    /// the menu bar and returns shortly after it leaves. `ClockZone` sizes
+    /// the zone.
     private func installClockHover() {
         pointerMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved, .leftMouseDragged]) { [weak self] _ in
             let point = NSEvent.mouseLocation
@@ -160,7 +157,7 @@ final class MenuBarManager {
     }
 
     private func pointerMoved(to point: NSPoint) {
-        let inZone = MenuBarGeometry.current.clockZoneContains(point, width: Self.clockZoneWidth)
+        let inZone = MenuBarGeometry.current.clockZoneContains(point, width: state.clockZoneWidth)
         guard inZone != isPointerInClockZone else { return }
         isPointerInClockZone = inZone
         clockHoverRestore?.cancel()
