@@ -45,7 +45,7 @@ MBAssessmentModeAssertion.activate(withConfiguration:completionHandler:)
 MBAssessmentModeAssertion.invalidate()
 ```
 
-While an assertion is active, `MenuBarAgent` shows only the apps and system items in the allow-list. Ellipsis puts every app except the hidden ones in the allow-list. Ellipsis puts every system item code (integers 0 to 40) in the allow-list. No permission is necessary. Bartender 7 and Thaw 3 use the same mechanism.
+While an assertion is active, `MenuBarAgent` shows only the apps and system items in the allow-list. Ellipsis puts every app except the hidden ones in the allow-list. Ellipsis puts every system item code (integers 0 to 40) in the allow-list. No permission is necessary. Thaw 3 use the same mechanism.
 
 Known limits of this mechanism:
 

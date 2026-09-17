@@ -35,7 +35,7 @@ An app without Full Disk Access cannot read the file. Thaw 3 asks the user to se
 
 ### Assessment-mode restriction
 
-`MenuBarAgent` runs an XPC server, `com.apple.MenuBarAgent.VisibilityRestrictionServer`. The private framework `MenuBarClientCore` wraps it in `MBAssessmentModeConfiguration` and `MBAssessmentModeAssertion`. Bartender 7 loads this framework with `dlopen`. Its entitlements are all public, so no private entitlement is necessary.
+`MenuBarAgent` runs an XPC server, `com.apple.MenuBarAgent.VisibilityRestrictionServer`. The private framework `MenuBarClientCore` wraps it in `MBAssessmentModeConfiguration` and `MBAssessmentModeAssertion`. This framework can be loaded with `dlopen`. Its entitlements are all public, so no private entitlement is necessary.
 
 A test tool activated an assertion from a plain process. Results:
 
@@ -56,5 +56,5 @@ The scripts from this phase are not in the repository. `Sources/Ellipsis/main.sw
 - Ice `ControlItem.swift`: the 10,000-point method.
 - Ice PR 994 and issue 980: the fitted-spacer attempt for macOS 27.
 - Thaw 3.0.0 alpha release notes: the layout table and the per-app hiding limit.
-- Bartender 7 binary strings: `MBAssessmentMode*` class names and the Golden Gate assessment mode driver.
+- The Golden Gate assessment mode driver.
 - `AutomaticAssessmentConfiguration.framework` headers: `allowsMenuBar`, `allowedMenuBarItems`, `AEMenuBarItem`.
