@@ -10,7 +10,7 @@ mise run test
 mise run run
 ```
 
-`mise run run` bundles a debug build, signs it ad hoc, copies it to `/Applications/Ellipsis.app` and opens it. Without mise, use `swift build`, `swift test` and `scripts/run.sh`.
+`mise run run` bundles a debug build as `EllipsisDev.app` with the identifier `au.ronny.EllipsisDev`, signs it ad hoc, copies it to `/Applications` and opens it. The debug build has its own settings and its own row in the Accessibility list, so it runs next to a release `Ellipsis.app`. Without mise, use `swift build`, `swift test` and `scripts/run.sh`.
 
 ## Make a release
 
