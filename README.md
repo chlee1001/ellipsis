@@ -6,7 +6,7 @@ Ellipsis hides selected menu bar items on macOS 27. Click its icon to show them.
 
 - macOS 27.0 or later.
 - Ellipsis must run from `/Applications`. `MenuBarAgent` matches the allow-list against apps in that folder only. A copy in any other folder hides its own icon.
-- No permissions. Ellipsis does not ask for Accessibility or Screen Recording.
+- No permission is necessary. Ellipsis offers the Accessibility permission once, as an option. See Limits.
 
 ## Install a release
 
@@ -20,7 +20,7 @@ Ellipsis hides selected menu bar items on macOS 27. Click its icon to show them.
 - Private API. Ellipsis loads `MenuBarClientCore.framework` and uses its `MBAssessmentMode` classes. A macOS update can rename or remove them. Ellipsis checks for the classes at launch and shows an alert if they are missing.
 - Focus and the camera/microphone indicator are hidden while any set is hidden. No setting brings them back. This is a limit of the API.
 - The hidden sets hold whole apps, not single items. An app with two menu bar items hides both.
-- The app pickers in Settings list every running app, not only apps with a menu bar item. macOS 27 gives no way to tell them apart without the Accessibility permission.
+- The app pickers in Settings list every running app, not only apps with a menu bar item. With the Accessibility permission, they list only apps with a menu bar item. The permission is optional. Ellipsis asks once at first launch, and again only from Settings.
 
 ## Alternatives
 

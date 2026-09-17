@@ -66,10 +66,14 @@ Exit criteria: every control changes behavior at once, no restart. `MenuBarManag
 
 Exit criteria: acceptance criteria 1, 10 and 11 pass on a clean checkout.
 
+## Phase 5b: Optional Accessibility permission — done
+
+`AccessibilityPermission` (trust state, opt-out flag, the explanation dialog) and an `AXExtrasMenuBar` scan in `RunningApps` that filters the pickers. The scan runs off the main thread with a 0.2 s timeout per app: an unresponsive app must not block Settings. Spec F6.
+
 ## Phase 6: Polish (optional)
 
 - Position-based sets: ask the user to select the `MenuBarAgent` layout table in a file panel once. The XPC route (`getPreferredTrailingItemPositions:`) needs a private entitlement, so the file panel stays. Then apps left of an Ellipsis divider item join the hidden set. This restores the Cmd+drag workflow.
-- Clock zone calibration: a "click the clock" step in Settings narrows the hover zone to the clock.
+- Clock zone calibration: with the Accessibility permission, read the clock item frame from `AXExtrasMenuBar` of `ControlCenter` or `SystemUIServer`. Without it, a "click the clock" step in Settings narrows the hover zone.
 - Export and import settings: "Export…" and "Import…" buttons in General. Export writes `UserDefaults.standard.persistentDomain(forName:)` to a plist through `NSSavePanel`. Import reads a plist through `NSOpenPanel`, checks the keys, and calls `setPersistentDomain`. `AppState` and `HiddenSets` reload from the store afterwards. This is a wrapper around `defaults export` and `defaults import` for `au.ronny.Ellipsis`.
 - Sparkle or manual update check. Not in v1.
 
@@ -81,6 +85,8 @@ Sources/Ellipsis/
   EllipsisApp.swift
   AppDelegate.swift
   AppState.swift
+  Accessibility/
+    AccessibilityPermission.swift
   MenuBar/
     MenuBarManager.swift
     MenuBarRestriction.swift

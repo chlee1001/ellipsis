@@ -4,7 +4,7 @@ struct SettingsView: View {
     @Environment(AppState.self) private var state
     @Environment(HiddenSets.self) private var sets
     @Environment(RunningApps.self) private var apps
-    @Environment(LaunchAtLogin.self) private var loginItem
+    @Environment(AccessibilityPermission.self) private var permission
 
     var body: some View {
         TabView {
@@ -50,7 +50,11 @@ struct SettingsView: View {
             }
         }
         .frame(width: 480, height: 460)
-        .onAppear(perform: apps.refresh)
+        .onAppear {
+            permission.refresh()
+            apps.refresh()
+        }
+        .onChange(of: permission.isTrusted) { apps.refresh() }
     }
 
     /// An app can be in one set only, so a check here removes it from the other set.
@@ -78,6 +82,7 @@ struct SettingsView: View {
 private struct GeneralSettings: View {
     @Environment(AppState.self) private var state
     @Environment(LaunchAtLogin.self) private var loginItem
+    @Environment(AccessibilityPermission.self) private var permission
 
     var body: some View {
         @Bindable var state = state
@@ -106,6 +111,20 @@ private struct GeneralSettings: View {
                 .disabled(!state.rehideOnTimeout)
                 Toggle("On a click outside the menu bar", isOn: $state.rehideOnClickOutside)
                 Toggle("When the front app or Space changes", isOn: $state.rehideOnFocusChange)
+            }
+            Section {
+                LabeledContent("Accessibility") {
+                    if permission.isTrusted {
+                        Text("Granted")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Button("Grant Permission…", action: permission.ask)
+                    }
+                }
+            } footer: {
+                Text(permission.isTrusted
+                    ? "The app pickers list only the apps that have a menu bar item."
+                    : "Optional. With it, the app pickers list only the apps that have a menu bar item.")
             }
             Section("About") {
                 LabeledContent("Version", value: Self.version)
