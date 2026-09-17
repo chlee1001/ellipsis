@@ -101,9 +101,11 @@ private struct GeneralSettings: View {
     @Environment(AppState.self) private var state
     @Environment(LaunchAtLogin.self) private var loginItem
     @Environment(AccessibilityPermission.self) private var permission
+    @Environment(Updater.self) private var updater
 
     var body: some View {
         @Bindable var state = state
+        @Bindable var updater = updater
         Form {
             Section {
                 Toggle(
@@ -148,6 +150,9 @@ private struct GeneralSettings: View {
             SettingsFileSection()
             Section("About") {
                 LabeledContent("Version", value: Self.version)
+                Toggle("Check for updates automatically", isOn: $updater.automaticallyChecksForUpdates)
+                Button("Check for Updates…", action: updater.checkForUpdates)
+                    .disabled(!updater.canCheckForUpdates)
                 Button("Quit Ellipsis") {
                     NSApp.terminate(nil)
                 }

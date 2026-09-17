@@ -29,6 +29,9 @@ mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp "$bin" "$app/Contents/MacOS/$name"
 cp "$root/Resources/Info.plist" "$app/Contents/Info.plist"
 cp "$root/Resources/AppIcon.icns" "$app/Contents/Resources/AppIcon.icns"
+mkdir -p "$app/Contents/Frameworks"
+ditto "$root/.build/artifacts/sparkle/Sparkle/Sparkle.xcframework/macos-arm64_x86_64/Sparkle.framework" \
+  "$app/Contents/Frameworks/Sparkle.framework"
 echo -n "APPL????" > "$app/Contents/PkgInfo"
 
 plist="$app/Contents/Info.plist"
@@ -37,6 +40,9 @@ plutil -replace CFBundleName -string "$name" "$plist"
 plutil -replace CFBundleIdentifier -string "$identifier" "$plist"
 [[ -z "${VERSION:-}" ]] || plutil -replace CFBundleShortVersionString -string "$VERSION" "$plist"
 [[ -z "${BUILD:-}" ]] || plutil -replace CFBundleVersion -string "$BUILD" "$plist"
+# A debug build still offers "Check for Updates…" but never checks on its own,
+# so it does not ask about automatic checks or replace itself with a release.
+[[ "$config" == "release" ]] || plutil -replace SUEnableAutomaticChecks -bool false "$plist"
 
 identity="${DEVELOPER_ID:-}"
 if [[ -z "$identity" ]]; then

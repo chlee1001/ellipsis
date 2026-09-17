@@ -11,6 +11,7 @@ final class MenuBarManager {
 
     private let restriction: MenuBarRestriction
     private let rehide: RehideMonitor
+    private let updater: Updater
     private let openSettingsHandler: () -> Void
     private let icon = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private var launchObserver: Task<Void, Never>?
@@ -41,11 +42,13 @@ final class MenuBarManager {
         restriction: MenuBarRestriction,
         sets: HiddenSets,
         state: AppState,
+        updater: Updater,
         openSettings: @escaping () -> Void
     ) {
         self.restriction = restriction
         self.sets = sets
         self.state = state
+        self.updater = updater
         self.openSettingsHandler = openSettings
         self.rehide = RehideMonitor(state: state, sets: sets)
 
@@ -210,6 +213,11 @@ final class MenuBarManager {
         settings.target = self
         menu.addItem(settings)
 
+        let update = NSMenuItem(title: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "")
+        update.target = self
+        update.isEnabled = updater.canCheckForUpdates
+        menu.addItem(update)
+
         menu.addItem(.separator())
 
         let quit = NSMenuItem(title: "Quit Ellipsis", action: #selector(NSApplication.terminate), keyEquivalent: "q")
@@ -227,5 +235,9 @@ final class MenuBarManager {
 
     @objc private func openSettings() {
         openSettingsHandler()
+    }
+
+    @objc private func checkForUpdates() {
+        updater.checkForUpdates()
     }
 }

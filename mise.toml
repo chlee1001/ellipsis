@@ -29,16 +29,22 @@ jj git push --tag "${tag}"
 """
 
 [tasks.release]
-description = "Tag, then build, sign, notarize, and write build/Ellipsis-X.Y.Z.zip"
+description = "Tag, then build, sign, notarize, write build/Ellipsis-X.Y.Z.zip and the appcast, and publish the GitHub release"
 usage = 'arg "<version>" help="X.Y.Z, without the v"'
 run = """
 set -euo pipefail
 mise run tag "${usage_version}"
 scripts/release.sh "${usage_version}"
+scripts/publish.sh "${usage_version}"
 """
 
+[tasks.publish]
+description = "Create the GitHub release for vX.Y.Z from build/Ellipsis-X.Y.Z.zip and build/appcast.xml"
+usage = 'arg "<version>" help="X.Y.Z, without the v"'
+run = 'scripts/publish.sh "${usage_version}"'
+
 [tasks.archive]
-description = "Build, sign, notarize, and zip the parent of @ using its existing tag"
+description = "Build, sign, notarize, zip and write the appcast for the parent of @ using its existing tag"
 run = """
 set -euo pipefail
 version="$(jj log -r @- --no-graph -T 'tags' | sed -n 's/^v\\([0-9][^ ]*\\).*/\\1/p')"
@@ -48,3 +54,7 @@ if [[ -z "${version}" ]]; then
 fi
 scripts/release.sh "${version}"
 """
+
+[tasks.sparkle-keys]
+description = "Run Sparkle's generate_keys (the EdDSA update key in the login keychain). Args pass through: -p prints the public key, -x/-f export/import"
+run = ".build/artifacts/sparkle/Sparkle/bin/generate_keys"

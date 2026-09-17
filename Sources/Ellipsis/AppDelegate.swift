@@ -5,6 +5,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let sets: HiddenSets
     private let state: AppState
     private let permission = AccessibilityPermission()
+    private let updater = Updater()
     private var settingsWindow: SettingsWindow?
     private var menuBar: MenuBarManager?
     private var clockZone: ClockZone?
@@ -25,7 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Self.quit(with: error)
             return
         }
-        menuBar = MenuBarManager(restriction: restriction, sets: sets, state: state) { [unowned self] in
+        menuBar = MenuBarManager(restriction: restriction, sets: sets, state: state, updater: updater) { [unowned self] in
             showSettings()
         }
         permission.askAtLaunchIfNeeded()
@@ -42,7 +43,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showSettings() {
         if settingsWindow == nil, let clockZone {
-            settingsWindow = SettingsWindow(state: state, sets: sets, permission: permission, clockZone: clockZone)
+            settingsWindow = SettingsWindow(state: state, sets: sets, permission: permission, clockZone: clockZone, updater: updater)
         }
         settingsWindow?.show()
     }
