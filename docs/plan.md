@@ -29,7 +29,7 @@ Exit criteria: the app runs, shows the icon, and applies the persisted sets at l
 4. Right-click on the icon opens an `NSMenu` with "Show always-hidden items", "Settings…", "Quit".
 5. Setting: always-hidden set on or off. Off means the always-hidden set is never hidden. `MenuBarManager` observes the sets and this setting with `withObservationTracking`, so any writer, including the Settings window, changes the restriction at once.
 6. Release the restriction on quit (`applicationWillTerminate`).
-7. Clock click under a restriction fails (acceptance criterion 8), and `MenuBarAgent` decides at mouse-down, so a release on mouse-down is too late. A global mouse-move monitor releases the restriction while the pointer is in the trailing 300 points of the menu bar. The clock frame is not readable, see `docs/spec.md`.
+7. Clock click under a restriction fails (acceptance criterion 8), and `MenuBarAgent` decides at mouse-down, so a release on mouse-down is too late. A global mouse-move monitor releases the restriction while the pointer is in the trailing zone of the menu bar, 300 points until Phase 6 sizes it.
 
 Exit criteria: acceptance criteria 2, 3, 4, 8 and 9 pass. Checklist in `docs/testing.md`.
 
@@ -73,7 +73,7 @@ Exit criteria: acceptance criteria 1, 10 and 11 pass on a clean checkout.
 ## Phase 6: Polish (optional)
 
 - Position-based sets: ask the user to select the `MenuBarAgent` layout table in a file panel once. The XPC route (`getPreferredTrailingItemPositions:`) needs a private entitlement, so the file panel stays. Then apps left of an Ellipsis divider item join the hidden set. This restores the Cmd+drag workflow.
-- Clock zone calibration: with the Accessibility permission, read the clock item frame from `AXExtrasMenuBar` of `ControlCenter` or `SystemUIServer`. Without it, a "click the clock" step in Settings narrows the hover zone.
+- Clock zone calibration — done. `MenuBarLayout` reads the windows of `MenuBarAgent` over Accessibility: one slot per item with its frame and owner pid, and `com.apple.menuextra.clock` for the clock. `ClockZone` sets `clockZoneWidth` to the clock offset plus a 30-point margin at launch, when the permission arrives, and when Settings opens. Without the permission, "Click the Clock…" in General takes the width from one click on the clock's left edge. Measured with synthetic clicks: a 1-point zone never opens Notification Center, a 40-point zone (2 points of margin) opens it from a 10,000 points/s approach.
 - Export and import settings — done. "Export…" and "Import…" buttons in General. `SettingsFile` writes the settings keys (not the shown state, not the Accessibility opt-out) to a plist through `NSSavePanel`, and reads one back through `NSOpenPanel`. Import checks each known key's type, ignores unknown keys, and writes key by key so AppKit's own keys in the domain stay. `AppState` and `HiddenSets` reload from the store afterwards.
 - Sparkle or manual update check. Not in v1.
 

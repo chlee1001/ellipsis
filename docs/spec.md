@@ -53,8 +53,8 @@ Known limits of this mechanism:
 - Focus and the camera/microphone indicator are hidden while a restriction is active. No system item code brings them back.
 - The framework is private. Ellipsis loads it with `dlopen` and checks that the classes exist at launch. If they do not exist, Ellipsis shows an alert and quits.
 - The `allowedSystemItems` codes are undocumented. Code 2 is the clock, code 6 is Wi-Fi, code 8 is Control Center.
-- Notification Center does not open from a clock click while a restriction is active. Control Center and Wi-Fi menus do open. No system item code changes this (tested 0 to 2000). `MenuBarAgent` decides at mouse-down, so a release on mouse-down is too late. Ellipsis releases the restriction while the pointer is in the trailing 300 points of the menu bar, and applies it again 0.5 seconds after the pointer leaves. Hidden items show while the pointer is there.
-- The clock frame is not readable. `MenuBarAgent` has a utilities service (`listMenuBarItemsForSpaceID:`, `getPreferredTrailingItemPositions:`) but it needs the private entitlement `com.apple.private.menubar.utilities`. The window server exposes no window per item.
+- Notification Center does not open from a clock click while a restriction is active. Control Center and Wi-Fi menus do open. No system item code changes this (tested 0 to 2000). `MenuBarAgent` decides at mouse-down, so a release on mouse-down is too late. Ellipsis releases the restriction while the pointer is in the trailing zone of the menu bar, and applies it again 0.5 seconds after the pointer leaves. Hidden items show while the pointer is there. The zone is 300 points by default, the clock plus 30 points when measured (F6), or set by one click on the clock (F4).
+- Item frames are not readable without the Accessibility permission. `MenuBarAgent` has a utilities service (`listMenuBarItemsForSpaceID:`, `getPreferredTrailingItemPositions:`) but it needs the private entitlement `com.apple.private.menubar.utilities`. The window server exposes no window per item. With the permission, the windows of `MenuBarAgent` expose one slot per item with its frame and owner.
 - Activation is asynchronous. The newest assertion wins while several are alive, and an `invalidate` of an older one leaves the newer one intact. Ellipsis keeps the old assertion until the new one reports back, or every item flashes for a moment.
 - `MenuBarAgent` matches the allow-list only against apps that run from `/Applications`. An app that runs from another folder is always hidden while a restriction is active. This includes Ellipsis itself. The Ellipsis icon disappears if Ellipsis runs from a build folder.
 
@@ -94,6 +94,7 @@ A SwiftUI window with these controls:
 - Hidden set: a list of running apps with a checkbox per app. Ellipsis lists apps with a `.regular` or `.accessory` activation policy.
 - Always-hidden set: the same list, and a switch to enable the set.
 - Auto-rehide: three switches and the timeout value.
+- Clock zone: the width, and without the Accessibility permission a "Click the Clock…" button that takes the width from the next click in the menu bar.
 - Export and import: the sets and the options above as a property list file. Import ignores unknown keys and refuses a value of the wrong type.
 - Version number and a quit button.
 
@@ -108,12 +109,12 @@ Open the window from a right-click menu on the Ellipsis icon. The same menu has 
 
 ### F6: Optional Accessibility permission
 
-Without the permission, the app pickers (F4) list every running app. With it, Ellipsis asks each app over Accessibility (`AXExtrasMenuBar`) whether it has a menu bar item, and the pickers list only those apps. Hiding and showing work the same either way.
+Without the permission, the app pickers (F4) list every running app. With it, Ellipsis asks each app over Accessibility (`AXExtrasMenuBar`) whether it has a menu bar item, and the pickers list only those apps. With it, Ellipsis also reads the clock item's frame from `MenuBarAgent` and fits the clock zone to it. Hiding and showing work the same either way.
 
 - First launch: a dialog explains this and offers "Grant Permission" or "Not Now". "Grant Permission" adds Ellipsis to the Accessibility list and shows the system prompt. "Not Now" is stored and the dialog does not return at launch.
 - Settings › General shows "Granted", or a "Grant Permission…" button that opens the same dialog.
 - Ellipsis notices a change in System Settings at once, through the `com.apple.accessibility.api` distributed notification.
-- Ellipsis never uses Accessibility for anything else. The permission can later narrow the clock hover zone (see Open risks).
+- Ellipsis never uses Accessibility for anything else.
 
 ## Build and distribution
 
@@ -145,4 +146,4 @@ Without the permission, the app pickers (F4) list every running app. With it, El
 - If Ellipsis crashes, `MenuBarAgent` drops the restriction when the XPC connection closes. This needs a test.
 - Global mouse monitors (`NSEvent.addGlobalMonitorForEvents`) deliver mouse-move and mouse-down events with no Accessibility permission on macOS 27.0. Ellipsis depends on this for the clock hover and for F3 "click outside".
 - Open menus of other apps come from `CGWindowListCopyWindowInfo`, deprecated since macOS 14. Its replacement, `SCShareableContent`, needs Screen Recording. If the window list stops reporting pop-up menu windows, the menu-open guard for F3 stops working and a rehide can close a shown item's menu.
-- The clock hover zone is a fixed 300 points. A menu bar with many items right of the clock puts the clock outside the zone. A one-time "click the clock" calibration in Settings can fix that later.
+- The default clock zone is 300 points, so hidden items show whenever the pointer is near the right end of the menu bar. The measured or clicked zone fixes that, but a clock that grows (a longer date format) can outgrow a clicked zone. The measured zone follows: it is read again when Settings opens.

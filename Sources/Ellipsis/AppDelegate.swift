@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let permission = AccessibilityPermission()
     private var settingsWindow: SettingsWindow?
     private var menuBar: MenuBarManager?
+    private var clockZone: ClockZone?
 
     override init() {
         AppState.registerDefaults()
@@ -27,6 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             showSettings()
         }
         permission.askAtLaunchIfNeeded()
+        clockZone = ClockZone(state: state, permission: permission)
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -34,8 +36,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func showSettings() {
-        if settingsWindow == nil {
-            settingsWindow = SettingsWindow(state: state, sets: sets, permission: permission)
+        if settingsWindow == nil, let clockZone {
+            settingsWindow = SettingsWindow(state: state, sets: sets, permission: permission, clockZone: clockZone)
         }
         settingsWindow?.show()
     }

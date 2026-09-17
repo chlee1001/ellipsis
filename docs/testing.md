@@ -23,7 +23,9 @@ Numbers match the acceptance criteria in `docs/spec.md`.
 | 6c | Same setting on. Show the set. Right-click, "Settings…". | Set stays. Ellipsis coming to the front is not a focus change. | Pass |
 | 7 | Show the set. Open the menu of a shown item. Wait past the timeout. | Set stays while the menu is open. Hides right after the menu closes. | Pass |
 | 7a | Show the set. Open the menu of a shown item. Pick a menu item. | Menu action runs. Set hides. | Pass |
-| 8 | While the set is hidden, move the pointer to the clock. Click. Move away. | Hidden items show near the clock. Notification Center opens. Items hide again after 0.5 s. | |
+| 8 | While the set is hidden, move the pointer to the clock. Click. Move away. | Hidden items show near the clock. Notification Center opens. Items hide again after 0.5 s. | Pass |
+| 8a | Without Accessibility: General, "Click the Clock…", click the left edge of the clock. | The width becomes the distance to the right edge plus 30. "Reset" returns 300. | Pass |
+| 8b | With Accessibility: open General. | "N points, measured". Hidden items show over the clock, not over Control Center. | |
 | 9 | Quit from the right-click menu. | Every item returns. | |
 | 9a | `kill -9` Ellipsis. | Every item returns. | |
 | S1 | Settings › Hidden: check an app. | Its items hide at once. | Pass |
