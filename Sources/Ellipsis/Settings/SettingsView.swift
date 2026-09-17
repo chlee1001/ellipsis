@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @Environment(AppState.self) private var state
@@ -126,6 +127,7 @@ private struct GeneralSettings: View {
                     ? "The app pickers list only the apps that have a menu bar item."
                     : "Optional. With it, the app pickers list only the apps that have a menu bar item.")
             }
+            SettingsFileSection()
             Section("About") {
                 LabeledContent("Version", value: Self.version)
                 Button("Quit Ellipsis") {
@@ -142,5 +144,55 @@ private struct GeneralSettings: View {
         guard let short = info?["CFBundleShortVersionString"] as? String else { return "development build" }
         let build = info?["CFBundleVersion"] as? String
         return build.map { "\(short) (\($0))" } ?? short
+    }
+}
+
+/// "Export…" writes the settings to a property list. "Import…" reads one
+/// back and the models reload from the store.
+private struct SettingsFileSection: View {
+    @Environment(AppState.self) private var state
+    @Environment(HiddenSets.self) private var sets
+
+    var body: some View {
+        Section {
+            LabeledContent("Settings file") {
+                Button("Export…") { Task { await exportSettings() } }
+                Button("Import…") { Task { await importSettings() } }
+            }
+        } footer: {
+            Text("The hidden sets and the options above, as a property list.")
+        }
+    }
+
+    private func exportSettings() async {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.propertyList]
+        panel.nameFieldStringValue = "Ellipsis Settings.plist"
+        guard await panel.begin() == .OK, let url = panel.url else { return }
+        do {
+            try SettingsFile.export(from: .standard).write(to: url)
+        } catch {
+            Self.report(error, title: "The settings were not exported")
+        }
+    }
+
+    private func importSettings() async {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.propertyList]
+        guard await panel.begin() == .OK, let url = panel.url else { return }
+        do {
+            try SettingsFile.import(try Data(contentsOf: url), into: .standard)
+            state.reload()
+            sets.reload()
+        } catch {
+            Self.report(error, title: "The settings were not imported")
+        }
+    }
+
+    private static func report(_ error: Error, title: String) {
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = error.localizedDescription
+        alert.runModal()
     }
 }

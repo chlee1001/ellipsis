@@ -74,7 +74,7 @@ Exit criteria: acceptance criteria 1, 10 and 11 pass on a clean checkout.
 
 - Position-based sets: ask the user to select the `MenuBarAgent` layout table in a file panel once. The XPC route (`getPreferredTrailingItemPositions:`) needs a private entitlement, so the file panel stays. Then apps left of an Ellipsis divider item join the hidden set. This restores the Cmd+drag workflow.
 - Clock zone calibration: with the Accessibility permission, read the clock item frame from `AXExtrasMenuBar` of `ControlCenter` or `SystemUIServer`. Without it, a "click the clock" step in Settings narrows the hover zone.
-- Export and import settings: "Export…" and "Import…" buttons in General. Export writes `UserDefaults.standard.persistentDomain(forName:)` to a plist through `NSSavePanel`. Import reads a plist through `NSOpenPanel`, checks the keys, and calls `setPersistentDomain`. `AppState` and `HiddenSets` reload from the store afterwards. This is a wrapper around `defaults export` and `defaults import` for `au.ronny.Ellipsis`.
+- Export and import settings — done. "Export…" and "Import…" buttons in General. `SettingsFile` writes the settings keys (not the shown state, not the Accessibility opt-out) to a plist through `NSSavePanel`, and reads one back through `NSOpenPanel`. Import checks each known key's type, ignores unknown keys, and writes key by key so AppKit's own keys in the domain stay. `AppState` and `HiddenSets` reload from the store afterwards.
 - Sparkle or manual update check. Not in v1.
 
 ## File layout
