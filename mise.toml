@@ -1,0 +1,46 @@
+[tasks.build]
+description = "Compile with swift build"
+run = "swift build"
+
+[tasks.test]
+description = "Run the test suite"
+run = "swift test"
+
+[tasks.icon]
+description = "Rebuild Resources/AppIcon.icns from Resources/AppIcon.png"
+run = "scripts/make-icon.sh"
+
+[tasks.run]
+description = "Bundle a debug build, install it to /Applications, and open it"
+run = "scripts/run.sh"
+
+[tasks.tag]
+description = "Tag the parent of @ as vX.Y.Z and push the tag"
+usage = 'arg "<version>" help="X.Y.Z, without the v"'
+run = """
+set -euo pipefail
+tag="v${usage_version}"
+jj tag set "${tag}" -r @-
+jj git push --tag "${tag}"
+"""
+
+[tasks.release]
+description = "Tag, then build, sign, notarize, and write build/Ellipsis-X.Y.Z.zip"
+usage = 'arg "<version>" help="X.Y.Z, without the v"'
+run = """
+set -euo pipefail
+mise run tag "${usage_version}"
+scripts/release.sh "${usage_version}"
+"""
+
+[tasks.archive]
+description = "Build, sign, notarize, and zip the parent of @ using its existing tag"
+run = """
+set -euo pipefail
+version="$(jj log -r @- --no-graph -T 'tags' | sed -n 's/^v\\([0-9][^ ]*\\).*/\\1/p')"
+if [[ -z "${version}" ]]; then
+  echo "error: @- has no vX.Y.Z tag. Run: mise run release X.Y.Z" >&2
+  exit 1
+fi
+scripts/release.sh "${version}"
+"""
