@@ -36,6 +36,16 @@ final class HiddenSets {
     /// Not persisted: the always-hidden set hides again at every launch.
     var isAlwaysHiddenSetShown = false
 
+    func show(includingAlwaysHidden: Bool) {
+        isHiddenSetShown = true
+        isAlwaysHiddenSetShown = includingAlwaysHidden
+    }
+
+    func hide() {
+        isHiddenSetShown = false
+        isAlwaysHiddenSetShown = false
+    }
+
     /// The bundle identifiers a restriction must hide right now.
     /// Empty means no restriction is necessary.
     func identifiersToHide(isAlwaysHiddenEnabled: Bool) -> Set<String> {
