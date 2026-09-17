@@ -1,13 +1,6 @@
 # Manual test checklist
 
-Run `scripts/run.sh` first. Set the sets with `defaults` until the Settings window has an app picker (Phase 4):
-
-```
-defaults write to.haryan.Ellipsis hiddenBundleIdentifiers -array com.example.one
-defaults write to.haryan.Ellipsis alwaysHiddenBundleIdentifiers -array com.example.two
-```
-
-Relaunch after a `defaults write`. Ellipsis reads the sets at launch only.
+Run `scripts/run.sh` first. Set the sets in Settings › Hidden and Settings › Always Hidden.
 
 Numbers match the acceptance criteria in `docs/spec.md`.
 
@@ -31,5 +24,11 @@ Numbers match the acceptance criteria in `docs/spec.md`.
 | 8 | While the set is hidden, move the pointer to the clock. Click. Move away. | Hidden items show near the clock. Notification Center opens. Items hide again after 0.5 s. | |
 | 9 | Quit from the right-click menu. | Every item returns. | |
 | 9a | `kill -9` Ellipsis. | Every item returns. | |
+| S1 | Settings › Hidden: check an app. | Its items hide at once. | Pass |
+| S2 | Check the same app under Always Hidden. | It leaves the Hidden list. Items stay hidden after a normal click. | Pass |
+| S3 | Check an app, quit that app. | It stays in the list, marked "Not running". Uncheck it. It leaves the list. | |
+| S4 | Launch another app while Settings is open. | It appears in both lists. | |
+| S5 | General: turn on "Launch at login". Open System Settings › Login Items. | Ellipsis is listed. Turn it off there. The switch in Ellipsis turns off when the window reopens. | |
+| S6 | General: "Quit Ellipsis". | Every item returns. | |
 | 10 | Release build: `spctl --assess`, `stapler validate`. | Both pass. | Phase 5 |
 | 11 | Clean checkout: `swift build`, every script. | No Xcode project needed. | Phase 5 |

@@ -5,11 +5,15 @@ import SwiftUI
 @MainActor
 final class SettingsWindow {
     private let window: NSWindow
+    private let apps = RunningApps()
+    private let loginItem = LaunchAtLogin()
 
     init(state: AppState, sets: HiddenSets) {
         let content = SettingsView()
             .environment(state)
             .environment(sets)
+            .environment(apps)
+            .environment(loginItem)
         let host = NSHostingController(rootView: content)
         host.sizingOptions = .preferredContentSize
         window = NSWindow(
