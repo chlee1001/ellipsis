@@ -32,5 +32,9 @@
 	<string>© Ronny Haryanto</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>SUFeedURL</key>
+	<string>https://github.com/ronny/ellipsis/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>nZmV9ayuPgQBVqfYy1S5/s5QwvQOB4euji6pXhIHWdc=</string>
 </dict>
 </plist>

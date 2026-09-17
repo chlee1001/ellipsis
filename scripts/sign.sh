@@ -25,6 +25,7 @@ if security find-identity -v -p codesigning | grep -F "$identity" | grep -q CSSM
 fi
 
 echo "Signing with $identity" >&2
+"$root/scripts/sign-sparkle.sh" "$app" "$identity"
 codesign --force --options runtime --timestamp \
   --entitlements "$root/Resources/Ellipsis.entitlements" \
   --sign "$identity" "$app"

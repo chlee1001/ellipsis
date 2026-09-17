@@ -15,6 +15,8 @@ Ellipsis hides selected menu bar items on macOS 27. Click its icon to show them.
 3. Open Ellipsis. The `…` icon appears in the menu bar.
 4. Right-click the icon. Select "Settings…". Put apps in the hidden set. Or, with the Accessibility permission, turn on "Hide apps left of the Ellipsis icon" and Cmd-drag items to the left of the icon.
 
+Ellipsis checks GitHub Releases for updates with [Sparkle](https://sparkle-project.org). At the second launch, it asks whether it can check on its own. "Check for Updates…" in the icon menu checks now.
+
 ## Limits
 
 - Private API. Ellipsis loads `MenuBarClientCore.framework` and uses its `MBAssessmentMode` classes. A macOS update can rename or remove them. Ellipsis checks for the classes at launch and shows an alert if they are missing.
