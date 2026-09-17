@@ -93,6 +93,7 @@ A SwiftUI window with these controls:
 - Launch at login (`SMAppService`).
 - Hidden set: a list of running apps with a checkbox per app. Ellipsis lists apps with a `.regular` or `.accessory` activation policy.
 - Always-hidden set: the same list, and a switch to enable the set.
+- "Hide apps left of the Ellipsis icon": a switch (F7). Off without the Accessibility permission.
 - Auto-rehide: three switches and the timeout value.
 - Clock zone: the width, and without the Accessibility permission a "Click the Clock…" button that takes the width from the next click in the menu bar.
 - Export and import: the sets and the options above as a property list file. Import ignores unknown keys and refuses a value of the wrong type.
@@ -115,6 +116,16 @@ Without the permission, the app pickers (F4) list every running app. With it, El
 - Settings › General shows "Granted", or a "Grant Permission…" button that opens the same dialog.
 - Ellipsis notices a change in System Settings at once, through the `com.apple.accessibility.api` distributed notification.
 - Ellipsis never uses Accessibility for anything else.
+
+### F7: The icon as divider
+
+Off by default. When on, the Ellipsis icon divides the menu bar like the Bartender and Ice icons do: Cmd-drag items across it. Needs the Accessibility permission: with it, the windows of `MenuBarAgent` expose every visible item with its frame and owner, and the icon's own window frame gives the split point.
+
+- A visible app left of the icon joins the hidden set. A visible app right of it leaves the set, but only while the set is shown: while it is hidden, a hidden app can still be on its way out.
+- An app with an item on each side hides. Hiding is per app.
+- Apps that are not visible keep their membership. The always-hidden set is never touched.
+- Ellipsis reads the menu bar when the switch turns on, when the set is shown, after a Cmd-drag ends, and after an app launches. Turning the switch on hides whatever already sits left of the icon.
+- While the switch is on, the Hidden picker in Settings is read-only.
 
 ## Build and distribution
 

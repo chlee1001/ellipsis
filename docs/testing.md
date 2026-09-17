@@ -37,5 +37,10 @@ Numbers match the acceptance criteria in `docs/spec.md`.
 | S7 | General: "Export…", save. Open the file. | A plist with the sets and the rehide options. No `isHiddenSetShown`. | |
 | S8 | Change a set. General: "Import…", pick the file from S7. | The set returns to the exported one at once. Items hide or show to match. | |
 | S9 | "Import…", pick a plist that is not from Ellipsis. | An alert: "The file has no Ellipsis settings." Settings unchanged. | |
+| D1 | Settings › Hidden: turn on "Hide apps left of the Ellipsis icon" (needs Accessibility). | Apps already left of the icon hide. The Hidden picker greys out. | Pass |
+| D2 | While the set is hidden, Cmd-drag the icon to the right of an item. | That app hides. | Pass |
+| D3 | Show the set. Cmd-drag the icon to the far left. | Every app leaves the hidden set and stays when the set hides again. | Pass |
+| D4 | Cmd-drag an app's item from right of the icon to left of it. | It hides. | |
+| D5 | Settings › Hidden: turn the switch off. | The picker is editable. The set is unchanged. | |
 | 10 | Release build: `spctl --assess`, `stapler validate`. | Both pass. | Phase 5 |
 | 11 | Clean checkout: `swift build`, every script. | No Xcode project needed. | Phase 5 |
