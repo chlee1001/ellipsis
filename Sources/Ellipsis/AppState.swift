@@ -37,6 +37,15 @@ final class AppState {
         rehideTimeout = store.double(forKey: Key.rehideTimeout)
     }
 
+    /// Reads every value from the store again, after an import wrote to it.
+    func reload() {
+        isAlwaysHiddenEnabled = store.bool(forKey: Key.isAlwaysHiddenEnabled)
+        rehideOnTimeout = store.bool(forKey: Key.rehideOnTimeout)
+        rehideOnClickOutside = store.bool(forKey: Key.rehideOnClickOutside)
+        rehideOnFocusChange = store.bool(forKey: Key.rehideOnFocusChange)
+        rehideTimeout = store.double(forKey: Key.rehideTimeout)
+    }
+
     var isAlwaysHiddenEnabled: Bool {
         didSet { store.set(isAlwaysHiddenEnabled, forKey: Key.isAlwaysHiddenEnabled) }
     }

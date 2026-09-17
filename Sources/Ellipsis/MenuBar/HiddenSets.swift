@@ -21,6 +21,12 @@ final class HiddenSets {
         isHiddenSetShown = store.bool(forKey: Key.isHiddenSetShown)
     }
 
+    /// Reads both sets from the store again, after an import wrote to it.
+    func reload() {
+        hidden = Set(store.stringArray(forKey: Key.hidden) ?? [])
+        alwaysHidden = Set(store.stringArray(forKey: Key.alwaysHidden) ?? [])
+    }
+
     var hidden: Set<String> {
         didSet { store.set(hidden.sorted(), forKey: Key.hidden) }
     }

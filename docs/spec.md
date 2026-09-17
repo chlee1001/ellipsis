@@ -94,6 +94,7 @@ A SwiftUI window with these controls:
 - Hidden set: a list of running apps with a checkbox per app. Ellipsis lists apps with a `.regular` or `.accessory` activation policy.
 - Always-hidden set: the same list, and a switch to enable the set.
 - Auto-rehide: three switches and the timeout value.
+- Export and import: the sets and the options above as a property list file. Import ignores unknown keys and refuses a value of the wrong type.
 - Version number and a quit button.
 
 Open the window from a right-click menu on the Ellipsis icon. The same menu has "Show always-hidden items", "Settings…", and "Quit".

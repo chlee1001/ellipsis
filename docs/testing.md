@@ -32,5 +32,8 @@ Numbers match the acceptance criteria in `docs/spec.md`.
 | S4 | Launch another app while Settings is open. | It appears in both lists. | |
 | S5 | General: turn on "Launch at login". Open System Settings › Login Items. | Ellipsis is listed. Turn it off there. The switch in Ellipsis turns off when the window reopens. | |
 | S6 | General: "Quit Ellipsis". | Every item returns. | |
+| S7 | General: "Export…", save. Open the file. | A plist with the sets and the rehide options. No `isHiddenSetShown`. | |
+| S8 | Change a set. General: "Import…", pick the file from S7. | The set returns to the exported one at once. Items hide or show to match. | |
+| S9 | "Import…", pick a plist that is not from Ellipsis. | An alert: "The file has no Ellipsis settings." Settings unchanged. | |
 | 10 | Release build: `spctl --assess`, `stapler validate`. | Both pass. | Phase 5 |
 | 11 | Clean checkout: `swift build`, every script. | No Xcode project needed. | Phase 5 |
