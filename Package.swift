@@ -9,6 +9,12 @@ let package = Package(
             name: "Ellipsis",
             path: "Sources/Ellipsis",
             swiftSettings: [.swiftLanguageMode(.v6)]
-        )
+        ),
+        .testTarget(
+            name: "EllipsisTests",
+            dependencies: ["Ellipsis"],
+            path: "Tests/EllipsisTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
     ]
 )
