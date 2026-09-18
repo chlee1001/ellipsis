@@ -100,12 +100,7 @@ Exit criteria — met: `mise run vm-test` passes on a clean checkout with the go
 
 Displays with a notch drop the shown items that do not fit. Spec F8. The bar works on every display, so every step but the spike is built on the desktop and tested in the VM (Phase 7). A virtual display has no notch, but the same drop happens when the status item region ends at the front app's menus: a narrow VM display (`tart set --display`) and a fixture with a wide menu bar reproduce it. `NSScreen.safeAreaInsets` stays zero in the VM, so the placement default takes the insets as a parameter and has a unit test.
 
-1. Spike on the laptop with a notch. Record the result in `docs/phase8.md` in the format of `docs/phase0.md`. Questions:
-   - What `MenuBarAgent` does with an item that does not fit right of the notch: not drawn, drawn left of the notch, or drawn under it.
-   - Whether `MenuBarLayout` reports a frame for such an item. The expectation is no.
-   - Whether a restriction that allows one app puts that app's item right of the notch.
-   - The frame of the Ellipsis icon window and `NSScreen.safeAreaInsets` on that display.
-   - Whether the notch boundary and the app-menu boundary produce the same layout, so the VM test stands for the notch.
+1. Spike — done in the VM, host check pending. `docs/phase8.md`. macOS 27 collapses the items that do not fit behind a system `«` button and the Ellipsis icon collapses first. `MenuBarLayout` reports collapsed items with stacked frames. What the host has to answer: whether a notch region behaves like the app-menu region, whether `«` opens with a real mouse, and `NSScreen.safeAreaInsets` on that display.
 2. Add `AppState.hiddenItemsPlacement` (`menuBar` or `floatingBar`) and the "Show hidden items" picker in General. The default comes from `NSScreen.safeAreaInsets.top` at first launch.
 3. Add `FloatingBarPlacement`: a pure function from the icon frame, the screen and the panel size to the panel frame. Unit tests.
 4. Add `FloatingBar`: the `NSPanel`, an `NSHostingView` with an `HStack` of 18-point app icons, tooltips, hover. It takes the bundle identifiers to show and a click handler.

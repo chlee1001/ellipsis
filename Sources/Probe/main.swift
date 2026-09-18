@@ -8,6 +8,7 @@ import Foundation
 // the same as the frames in `layout`.
 //
 //   probe layout                       the menu bar items of every display
+//   probe inspect                      every slot's Accessibility tree, for spikes
 //   probe menus                        the frames of the open menus
 //   probe screens                      the frame and safe area insets of every screen
 //   probe move X Y
@@ -33,6 +34,38 @@ func emit<T: Encodable>(_ value: T) throws {
     encoder.outputFormatting = [.sortedKeys]
     FileHandle.standardOutput.write(try encoder.encode(value))
     FileHandle.standardOutput.write(Data("\n".utf8))
+}
+
+func describe(_ element: AXUIElement, depth: Int) -> [String] {
+    var pid: pid_t = 0
+    AXUIElementGetPid(element, &pid)
+    var names: CFArray?
+    AXUIElementCopyAttributeNames(element, &names)
+    var parts: [String] = []
+    for name in ["AXRole", "AXSubrole", "AXTitle", "AXDescription", "AXValue", "AXIdentifier", "AXHelp", "AXEnabled", "AXPosition", "AXSize"] {
+        var value: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, name as CFString, &value) == .success, let value else { continue }
+        if CFGetTypeID(value) == AXValueGetTypeID() {
+            let axValue = value as! AXValue
+            var point = CGPoint.zero
+            var size = CGSize.zero
+            if AXValueGetValue(axValue, .cgPoint, &point) { parts.append("\(name)=\(Int(point.x)),\(Int(point.y))") }
+            else if AXValueGetValue(axValue, .cgSize, &size) { parts.append("\(name)=\(Int(size.width))x\(Int(size.height))") }
+        } else {
+            parts.append("\(name)=\(value)")
+        }
+    }
+    var actions: CFArray?
+    AXUIElementCopyActionNames(element, &actions)
+    if let actions = actions as? [String], !actions.isEmpty { parts.append("actions=\(actions.joined(separator: ","))") }
+    let bundle = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier ?? "pid \(pid)"
+    var lines = [String(repeating: "  ", count: depth) + "[\(bundle)] " + parts.joined(separator: " ")]
+    var children: CFTypeRef?
+    if AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &children) == .success,
+       let children = children as? [AXUIElement], depth < 4 {
+        for child in children { lines += describe(child, depth: depth + 1) }
+    }
+    return lines
 }
 
 func point(_ args: ArraySlice<String>) throws -> CGPoint {
@@ -76,6 +109,16 @@ do {
     case "layout":
         guard let layout = MenuBarLayout.read() else { throw ProbeError(description: "MenuBarAgent did not answer") }
         try emit(layout)
+    case "inspect":
+        guard let agent = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.MenuBarAgent").first
+        else { throw ProbeError(description: "no MenuBarAgent") }
+        let app = AXUIElementCreateApplication(agent.processIdentifier)
+        AXUIElementSetMessagingTimeout(app, 1)
+        var windows: CFTypeRef?
+        AXUIElementCopyAttributeValue(app, kAXWindowsAttribute as CFString, &windows)
+        for window in windows as? [AXUIElement] ?? [] {
+            print(describe(window, depth: 0).joined(separator: "\n"))
+        }
     case "menus":
         try emit(MenuBarGeometry.openMenuFrames().map(flipped))
     case "screens":

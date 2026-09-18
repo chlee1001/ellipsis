@@ -21,6 +21,9 @@ ssh_opts=(-i "$key" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null 
 
 ip() { tart ip "$1" --wait 120; }
 
+# Boots a VM in its own session, so it outlives the shell that started it.
+boot() { perl -e 'use POSIX; POSIX::setsid(); exec @ARGV' -- tart run "$1" --no-graphics > /dev/null 2>&1 < /dev/null & }
+
 case "${1:-}" in
   prepare)
     # The image grants Accessibility, Full Disk Access and Apple Events to
@@ -31,7 +34,7 @@ case "${1:-}" in
     tart delete "$golden" 2>/dev/null || true
     tart clone "$base" "$golden"
     tart set "$golden" --cpu 4 --memory 8192
-    nohup tart run "$golden" --no-graphics > /dev/null 2>&1 &
+    boot "$golden"
     addr="$(ip "$golden")"
     expect -c "
       set timeout 120
@@ -46,7 +49,7 @@ case "${1:-}" in
   clone)
     tart delete "$vm" 2>/dev/null || true
     tart clone "$golden" "$vm"
-    nohup tart run "$vm" --no-graphics > /dev/null 2>&1 &
+    boot "$vm"
     addr="$(ip "$vm")"
     until ssh "${ssh_opts[@]}" -o ConnectTimeout=2 "$user@$addr" true 2>/dev/null; do sleep 1; done
     echo "$addr"
@@ -71,6 +74,9 @@ case "${1:-}" in
     ;;
   delete)
     tart stop "$vm" 2>/dev/null || true
+    # A runner whose VM stopped under it keeps one of the two VM slots
+    # macOS allows, and the next boot fails with "exceeds the system limit".
+    pkill -f "tart run $vm " 2>/dev/null || true
     tart delete "$vm"
     ;;
   *)

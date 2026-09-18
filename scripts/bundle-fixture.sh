@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # Bundle the fixture app for the VM tests as build/FixtureN.app with the
 # identifier au.ronny.EllipsisFixture.N. The status item's title is FixtureN.
-# Usage: scripts/bundle-fixture.sh N   (N is one letter or word, e.g. A)
+# With a menu count the app is a regular app with that many menus, so it
+# takes most of the menu bar while it is frontmost: the stand-in for a notch.
+# Each menu is about 100 points wide on the guest's 1024-point display.
+# Usage: scripts/bundle-fixture.sh N [MENUS]   (N is one letter or word, e.g. A)
 set -euo pipefail
 
-suffix="${1:?usage: bundle-fixture.sh N}"
+suffix="${1:?usage: bundle-fixture.sh N [MENUS]}"
 root="$(cd "$(dirname "$0")/.." && pwd)"
 bin="$(swift build --package-path "$root" --product Fixture --show-bin-path)/Fixture"
 name="Fixture$suffix"
@@ -22,5 +25,6 @@ plist="$app/Contents/Info.plist"
 plutil -replace CFBundleExecutable -string "$name" "$plist"
 plutil -replace CFBundleName -string "$name" "$plist"
 plutil -replace CFBundleIdentifier -string "$identifier" "$plist"
+[[ -z "${2:-}" ]] || { plutil -replace EllipsisFixtureMenuCount -integer "$2" "$plist"; plutil -remove LSUIElement "$plist"; }
 codesign --force --sign - --identifier "$identifier" "$app"
 echo "$app"
