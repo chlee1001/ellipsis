@@ -12,6 +12,32 @@ mise run run
 
 `mise run run` bundles a debug build as `EllipsisDev.app` with the identifier `au.ronny.EllipsisDev`, signs it with your Developer ID (ad hoc without one), copies it to `/Applications` and opens it. The Developer ID keeps the signature stable across builds, so the Accessibility grant for the debug build survives a rebuild. The debug build has its own settings and its own row in the Accessibility list, so it runs next to a release `Ellipsis.app`. `mise run install` does the same with a release build as `Ellipsis.app`, signed but not notarized. Without mise, use `swift build`, `swift test`, `scripts/run.sh` and `scripts/run.sh release`.
 
+## VM tests
+
+`Tests/EllipsisVMTests` drives the app in a macOS guest, so a test run never touches your own menu bar or pointer. The guest is a [Tart](https://tart.run) VM cloned from `ghcr.io/cirruslabs/macos-golden-gate-base`, on which the image already grants Accessibility to `sshd`. The tests run on the host and reach the guest over `ssh`, through `scripts/vm.sh`. Every step is in `docs/plan.md`, Phase 7, and the spike in `docs/phase7.md`.
+
+Once:
+
+```sh
+curl -sSL https://github.com/cirruslabs/tart/releases/latest/download/tart.tar.gz | tar xz -C ~/.local/opt
+ln -s ~/.local/opt/tart.app/Contents/MacOS/tart ~/.local/bin/tart
+tart pull ghcr.io/cirruslabs/macos-golden-gate-base:latest   # about 40 GB
+scripts/vm.sh prepare                                          # the golden VM, 20 seconds
+```
+
+The Homebrew formula for `tart` does not install on current Homebrew, hence the tarball.
+
+Then:
+
+```sh
+mise run vm-test                                # clone, install, test, delete: about two minutes
+mise run vm-test -- --filter RehideTests        # one suite
+```
+
+`scripts/vm-test.sh` clones the golden VM as `ELLIPSIS_VM` (default `ellipsis-test`), copies `EllipsisDev.app`, the three fixture apps and the probe into it, grants the app Accessibility in the guest's TCC database, runs `swift test --filter EllipsisVMTests`, copies `~/screenshots` from the guest to `build/vm-screenshots`, and deletes the VM. `ELLIPSIS_VM_KEEP=1` leaves the VM running after the run. `ELLIPSIS_VM_REUSE=1` runs against a VM that is already up, which is the loop while writing a test: `scripts/vm.sh clone` once, then `ELLIPSIS_VM_REUSE=1 scripts/vm-test.sh` as often as needed, then `scripts/vm.sh delete`. `scripts/vm.sh ssh` opens a shell in the guest, and `tart run ellipsis-test --vnc` after `scripts/vm.sh stop` shows its screen.
+
+Without `ELLIPSIS_VM` the suites skip, so `mise run test` and CI stay unit tests. The rows of `docs/testing.md` marked `vm` have a test. The guest has no notch.
+
 ## Make a release
 
 1. Make sure that a "Developer ID Application" identity is in the login keychain.
@@ -47,5 +73,6 @@ If the key is lost, run `mise run sparkle-keys` for a new one and put the new pu
 - `docs/spec.md`: what Ellipsis does.
 - `docs/plan.md`: how it is built, phase by phase.
 - `docs/phase0.md`: what was tried against `MenuBarAgent`, and what worked.
-- `docs/testing.md`: the manual test checklist.
+- `docs/phase7.md`: what was tried in a Tart guest, and what worked.
+- `docs/testing.md`: the test checklist, VM and manual.
 

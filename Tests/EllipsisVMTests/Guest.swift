@@ -70,14 +70,69 @@ struct Guest: Sendable {
         try !run("pgrep -x \(app) || true").isEmpty
     }
 
-    /// Every test starts with the three fixtures in the menu bar and no
-    /// Ellipsis, whatever the last test left behind.
+    /// MenuBarAgent's layout table. It remembers where each status item
+    /// was, as points from the right edge, across launches of the app. A
+    /// Cmd-drag in one test would move the icon for every test after it.
+    private static let layoutTable = "\"$HOME/Library/Group Containers/com.apple.MenuBar/Library/Preferences/com.apple.MenuBar\""
+
+    private func setPosition(_ key: String, _ pointsFromRight: Int) throws {
+        try run("defaults write \(Self.layoutTable) TrailingItemPreferredPositions -dict-add '\(key)' -float \(pointsFromRight)")
+    }
+
+    /// Where the icon lands when Ellipsis launches, left of the fixtures.
+    static let iconPosition = 500
+
+    /// Where a quit fixture lands at its next launch.
+    func placeFixture(_ identifier: String, pointsFromRight: Int) throws {
+        try setPosition("status:\(identifier)::Item-0", pointsFromRight)
+    }
+
+    /// The fixtures' remembered positions, points from the right edge.
+    private func fixturePositions() throws -> [String: Double] {
+        let json = try run("plutil -convert json -o - \(Self.layoutTable).plist")
+        let table = try JSONDecoder().decode([String: [String: Double]].self, from: Data(json.utf8))
+        var positions: [String: Double] = [:]
+        for id in Fixture.all {
+            positions[id] = table["TrailingItemPreferredPositions"]?["status:\(id)::Item-0"]
+        }
+        return positions
+    }
+
+    private func visibleFixtures() throws -> [String] {
+        try items().compactMap(\.bundleIdentifier).filter { Fixture.all.contains($0) }
+    }
+
+    /// Every test starts with no Ellipsis and the three fixtures in the
+    /// menu bar in the order A, B, C, right of where the icon will launch,
+    /// whatever the last test left behind. A test that moved a fixture, or
+    /// relaunched one elsewhere, gets them all relaunched in place. The
+    /// layout table lags behind a drag and the bar lags behind a relaunch,
+    /// so both are checked.
     func startFixtures() throws {
         try quit(Self.appName)
-        for id in Fixture.all where try !isRunning(Fixture.name(id)) {
-            try launch(Fixture.name(id))
+        try waitUntilSettled()
+        let positions = try fixturePositions()
+        let ordered = Fixture.all.map { positions[$0] ?? .infinity }
+        let inPlace = ordered == ordered.sorted(by: >) && ordered.allSatisfy { $0 < Double(Self.iconPosition) }
+        if try !inPlace || visibleFixtures() != Fixture.all {
+            for id in Fixture.all {
+                try quit(Fixture.name(id))
+            }
+            // MenuBarAgent saves its own positions a moment after an item
+            // leaves, over anything written before that.
+            let wanted = Dictionary(uniqueKeysWithValues: Fixture.all.enumerated().map { ($1, Double(300 - $0 * 50)) })
+            try waitUntil("the fixture positions are written") {
+                for (id, position) in wanted {
+                    try placeFixture(id, pointsFromRight: Int(position))
+                }
+                Thread.sleep(forTimeInterval: 0.5)
+                return try fixturePositions() == wanted
+            }
+            for id in Fixture.all {
+                try launch(Fixture.name(id))
+            }
         }
-        try waitUntil("the fixtures are in the menu bar") { try appItems().isSuperset(of: Fixture.all) }
+        try waitUntil("the fixtures are in the menu bar in order") { try visibleFixtures() == Fixture.all }
     }
 
     // MARK: Ellipsis
@@ -88,6 +143,7 @@ struct Guest: Sendable {
     func launchEllipsis(_ settings: [String: Setting] = [:]) throws {
         try quit(Self.appName)
         try run("defaults delete \(Self.appIdentifier) 2>/dev/null || true")
+        try setPosition("status:\(Self.appIdentifier)::ellipsis.icon", Self.iconPosition)
         var all: [String: Setting] = [
             "accessibilityDeclined": .bool(true),
             "rehideOnTimeout": .bool(false),
@@ -100,6 +156,18 @@ struct Guest: Sendable {
         }
         try launch(Self.appName)
         try waitUntil("the Ellipsis icon appears") { try iconFrame() != nil }
+        try waitUntilSettled()
+    }
+
+    /// A new item appears, then MenuBarAgent moves it to its remembered
+    /// place. Two reads that agree mean the layout is done.
+    func waitUntilSettled(sourceLocation: SourceLocation = #_sourceLocation) throws {
+        var last = try items().map(\.frame)
+        try waitUntil("the layout settles", sourceLocation: sourceLocation) {
+            let now = try items().map(\.frame)
+            defer { last = now }
+            return now == last
+        }
     }
 
     func setting(_ key: String) throws -> String {

@@ -1,33 +1,31 @@
-# Manual test checklist
+# Test checklist
 
-Run `scripts/run.sh` first. Set the sets in Settings › Hidden and Settings › Always Hidden.
-
-Numbers match the acceptance criteria in `docs/spec.md`.
+Numbers match the acceptance criteria in `docs/spec.md`. A row marked `vm` has a test in `Tests/EllipsisVMTests` that `mise run vm-test` runs in a Tart guest (see `docs/development.md`). The other rows are manual: run `scripts/run.sh` first and set the sets in Settings › Hidden and Settings › Always Hidden. They stay manual because they need the permission dialog (1 to 1b), the right-click menu (4a, 6c), the Settings window (5a, 8a, S1 to S9) or the release scripts (10, 11).
 
 | # | Steps | Expect | Result |
 |---|---|---|---|
 | 1 | Fresh install, launch | Icon shows `…`. One Ellipsis dialog offers Accessibility. No macOS prompt. | |
 | 1a | Dialog: "Not Now". Quit. Relaunch. | No dialog. Settings › General shows "Grant Permission…". | |
 | 1b | Settings: "Grant Permission…", then turn Ellipsis on in System Settings › Accessibility. | Settings shows "Granted" without a relaunch. Hidden tab lists only apps with a menu bar item. | |
-| 2 | Put an app in the hidden set. Click the icon. Click again. | Items hide, show (`‹`), hide (`…`). | |
-| 3 | Show the set. Quit. Relaunch. | Set is still shown. Sets are unchanged. | |
-| 4 | Put an app in the always-hidden set. Click. Option+click. | Normal click keeps it hidden. Option+click shows it. | |
+| 2 | Put an app in the hidden set. Click the icon. Click again. | Items hide, show (`‹`), hide (`…`). | vm |
+| 3 | Show the set. Quit. Relaunch. | Set is still shown. Sets are unchanged. | vm |
+| 4 | Put an app in the always-hidden set. Click. Option+click. | Normal click keeps it hidden. Option+click shows it. | vm |
 | 4a | Right-click, "Show always-hidden items". | Both sets show. Menu item gets a checkmark. | |
-| 4b | Settings: turn off "Keep an always-hidden set". | Always-hidden apps appear at once. | |
-| 5 | Show the set. Wait for the timeout (default 15 s). | Set hides. | Pass |
+| 4b | Settings: turn off "Keep an always-hidden set". | Always-hidden apps appear at once. | vm |
+| 5 | Show the set. Wait for the timeout (default 15 s). | Set hides. | vm |
 | 5a | Settings: set the timeout to 3 s while the set is shown. | Set hides 3 s later. | Pass |
-| 5b | Settings: turn "After a timeout" off. Show the set. Wait. | Set stays. | Pass |
-| 6 | Show the set. Click the desktop. | Set hides. | Pass |
-| 6a | Show the set. Click another item in the menu bar. | Set stays. | Pass |
-| 6b | Settings: turn "When the front app or Space changes" on. Show the set. Cmd+Tab to another app. | Set hides. | Pass |
+| 5b | Settings: turn "After a timeout" off. Show the set. Wait. | Set stays. | vm |
+| 6 | Show the set. Click the desktop. | Set hides. | vm |
+| 6a | Show the set. Click another item in the menu bar. | Set stays. | vm |
+| 6b | Settings: turn "When the front app or Space changes" on. Show the set. Cmd+Tab to another app. | Set hides. | vm |
 | 6c | Same setting on. Show the set. Right-click, "Settings…". | Set stays. Ellipsis coming to the front is not a focus change. | Pass |
-| 7 | Show the set. Open the menu of a shown item. Wait past the timeout. | Set stays while the menu is open. Hides right after the menu closes. | Pass |
-| 7a | Show the set. Open the menu of a shown item. Pick a menu item. | Menu action runs. Set hides. | Pass |
-| 8 | While the set is hidden, move the pointer to the clock. Click. Move away. | Hidden items show near the clock. Notification Center opens. Items hide again after 0.5 s. | Pass |
+| 7 | Show the set. Open the menu of a shown item. Wait past the timeout. | Set stays while the menu is open. Hides right after the menu closes. | vm |
+| 7a | Show the set. Open the menu of a shown item. Pick a menu item. | Menu action runs. Set hides. | vm |
+| 8 | While the set is hidden, move the pointer to the clock. Click. Move away. | Hidden items show near the clock. Notification Center opens. Items hide again after 0.5 s. | vm |
 | 8a | Without Accessibility: General, "Click the Clock…", click the left edge of the clock. | The width becomes the distance to the right edge plus 30. "Reset" returns 300. | Pass |
-| 8b | With Accessibility: open General. | "N points, measured". Hidden items show over the clock, not over Control Center. | |
-| 9 | Quit from the right-click menu. | Every item returns. | |
-| 9a | `kill -9` Ellipsis. | Every item returns. | |
+| 8b | With Accessibility: open General. | "N points, measured". Hidden items show over the clock, not over Control Center. | vm |
+| 9 | Quit from the right-click menu. | Every item returns. | vm |
+| 9a | `kill -9` Ellipsis. | Every item returns. | vm |
 | S1 | Settings › Hidden: check an app. | Its items hide at once. | Pass |
 | S2 | Check the same app under Always Hidden. | It leaves the Hidden list. Items stay hidden after a normal click. | Pass |
 | S3 | Check an app, quit that app. | It stays in the list, marked "Not running". Uncheck it. It leaves the list. | |
@@ -37,10 +35,10 @@ Numbers match the acceptance criteria in `docs/spec.md`.
 | S7 | General: "Export…", save. Open the file. | A plist with the sets and the rehide options. No `isHiddenSetShown`. | |
 | S8 | Change a set. General: "Import…", pick the file from S7. | The set returns to the exported one at once. Items hide or show to match. | |
 | S9 | "Import…", pick a plist that is not from Ellipsis. | An alert: "The file has no Ellipsis settings." Settings unchanged. | |
-| D1 | Settings › Hidden: turn on "Hide apps left of the Ellipsis icon" (needs Accessibility). | Apps already left of the icon hide. The Hidden picker greys out. | Pass |
-| D2 | While the set is hidden, Cmd-drag the icon to the right of an item. | That app hides. | Pass |
-| D3 | Show the set. Cmd-drag the icon to the far left. | Every app leaves the hidden set and stays when the set hides again. | Pass |
-| D4 | Cmd-drag an app's item from right of the icon to left of it. | It hides. | |
-| D5 | Settings › Hidden: turn the switch off. | The picker is editable. The set is unchanged. | |
+| D1 | Settings › Hidden: turn on "Hide apps left of the Ellipsis icon" (needs Accessibility). | Apps already left of the icon hide. The Hidden picker greys out. | vm |
+| D2 | While the set is hidden, Cmd-drag the icon to the right of an item. | That app hides. | vm |
+| D3 | Show the set. Cmd-drag the icon to the far left. | Every app leaves the hidden set and stays when the set hides again. | vm |
+| D4 | Cmd-drag an app's item from right of the icon to left of it. | It hides. | vm |
+| D5 | Settings › Hidden: turn the switch off. | The picker is editable. The set is unchanged. | vm |
 | 10 | Release build: `spctl --assess`, `stapler validate`. | Both pass. | Phase 5 |
 | 11 | Clean checkout: `swift build`, every script. | No Xcode project needed. | Phase 5 |
