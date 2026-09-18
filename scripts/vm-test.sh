@@ -30,8 +30,17 @@ fi
 "$vm" scp "$app" "${fixtures[@]}" /Applications/
 "$vm" scp "$probe" /Users/admin/probe
 
+# The image grants Accessibility to sshd, not to apps it launches. Ellipsis
+# needs it for the divider (D1 to D5) and the measured clock zone. SIP is
+# off in the guest, so the row goes straight into the TCC database, as the
+# image's own rows did; tccd restarts to read it.
+"$vm" ssh 'sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
+  "INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version, indirect_object_identifier, flags)
+   VALUES (\"kTCCServiceAccessibility\", \"au.ronny.EllipsisDev\", 0, 2, 0, 1, \"UNUSED\", 0)" && sudo pkill tccd || true'
+
 status=0
-swift test --package-path "$root" --filter EllipsisVMTests "$@" || status=$?
+# One menu bar in the guest: suites must not run at the same time.
+swift test --package-path "$root" --no-parallel --filter EllipsisVMTests "$@" || status=$?
 
 mkdir -p "$root/build/vm-screenshots"
 "$vm" scp-from screenshots "$root/build/vm-screenshots/" 2>/dev/null || true

@@ -89,12 +89,12 @@ The VM is a [Tart](https://tart.run) guest, cloned from `ghcr.io/cirruslabs/maco
 4. Probe — done. `Sources/Probe/main.swift`, an executable target with no UI. Subcommands: `layout` (`MenuBarLayout.read()` as JSON), `menus` (`MenuBarGeometry.openMenuFrames()`), `screens` (frame and safe area top of each screen), `move X Y`, `click X Y [--option] [--command] [--right]` and `drag X1 Y1 X2 Y2 [--command]` (`CGEvent`s at a point in Accessibility coordinates). `MenuBarLayout` and `MenuBarGeometry` moved to a library target `EllipsisCore` that `Ellipsis`, `Probe` and the tests link, and `MenuBarLayout` is `Codable`, so the tests decode the probe's output into the same type. The probe is the only thing that touches the guest's screen.
 5. Test target — done. `Tests/EllipsisVMTests`, swift-testing, on the host. `Guest` wraps `scripts/vm.sh ssh`: `run`, `probe` decoded from JSON, `launch`, `quit`, `kill`, `launchEllipsis(settings)` (quit, `defaults delete`, `defaults write` each setting plus the ones a test needs to run unattended, launch, wait for the icon), `items`, `appItems`, `iconFrame`, `clickIcon(option:)`, `openMenus`, `screenshot`, `waitUntil` and `expectStable` with polling, since `MenuBarAgent` lays out after the event. `startFixtures` puts the guest in the same state before every test. Every suite has `.enabled(if: Guest.isConfigured)`, so `mise run test` skips them, and `.serialized`, since there is one menu bar.
 6. Test run — done. `scripts/vm-test.sh`: build, bundle the app, three fixtures and the probe, `vm.sh clone`, copy the bundles to `/Applications` and the probe to the home directory, `swift test --filter EllipsisVMTests`, copy `~/screenshots` out to `build/vm-screenshots`, `vm.sh delete`. `mise run vm-test` runs it: 46 seconds for the first suite, 22 of them tests. `ELLIPSIS_VM_KEEP` leaves the VM running; `ELLIPSIS_VM_REUSE` runs against a VM that is already up, which is the loop while writing a test. The ssh control socket in `vm.sh` makes each guest command cost about 40 ms.
-7. Settings in tests come from `defaults write au.ronny.EllipsisDev` before the launch, not from the Settings window. The Settings window is a SwiftUI form; the acceptance criteria are about the menu bar. Each test launches the app with the settings it needs and quits it at the end. A test for a settings change while the app runs (5a, 4b, D5) uses `defaults write` and then checks that the app picked it up; if `AppState` does not observe external writes, the test relaunches and the criterion stays manual.
-8. Tests. One test per row of `docs/testing.md` that the guest can run: 2, 3, 4, 4b, 5, 5a, 5b, 6, 6a, 6b, 7, 7a, 8 (the clock zone, with `click` at the clock frame from `layout`), 9, 9a, D1 to D5, and S7 to S9 through the export file. Rows that stay manual, with the reason in the checklist: 1 to 1b (the permission dialog), 4a and 6c (a right-click menu drawn by Ellipsis; the probe can click it, but the menu items are found by frame only), 8a and 8b (the Settings window), S1 to S6 (the Settings window), 10 and 11 (release scripts). The Result column of a row with a test says `vm`.
-9. CI. `.github/workflows/vm-test.yml` on `runs-on: self-hosted` with `mise run vm-test`. GitHub's hosted macOS runners are VMs with no nested virtualization, so the runner is a Mac with `tart` and the golden VM. Apple allows two macOS guests per host, so the workflow has `concurrency` set to one run at a time. The workflow is a deliverable only once a runner exists; until then the script is the CI.
-10. Docs: `docs/development.md` (the golden VM checklist, `mise run vm-test`, `ELLIPSIS_VM`, `ELLIPSIS_VM_KEEP`), `docs/testing.md` (which rows have a test), this file.
+7. Settings — done. Tests write them with `defaults write au.ronny.EllipsisDev` before the launch, not through the Settings window; each test launches the app with the settings it needs. `AppState` does not see a `defaults write` while the app runs, so row 5a (a timeout change while shown) stays manual.
+8. Tests — done. `HideShowTests` (2, 3, 4, 4b, 9, 9a), `RehideTests` (5, 5b, 6, 6a, 6b, 7, 7a), `ClockZoneTests` (8, 8b) and `DividerTests` (D1 to D5): 21 tests, 85 seconds. Two things the tests had to learn about `MenuBarAgent`: it remembers each item's position in its layout table (`docs/phase0.md`) across launches, so `Guest` writes the icon's position before every launch and puts the fixtures back after a drag; and a new item appears first, then moves to its remembered place, so `launchEllipsis` waits for two equal reads. Rows that stay manual, with the reason in the checklist: 1 to 1b (the permission dialog), 4a and 6c (the right-click menu), 5a, 8a and S1 to S9 (the Settings window), 10 and 11 (release scripts). The tests found one bug: `NSWorkspace.didLaunchApplicationNotification` is not posted for `LSUIElement` apps, so the divider never read the menu bar after a menu bar app launched, and the Settings pickers never refreshed for one. Both now watch `NSWorkspace.runningApplications`.
+9. CI — dropped. GitHub's hosted macOS runners cannot run a VM, and a self-hosted runner costs a Mac. The VM tests are local: `mise run vm-test`. `mise run test` skips them.
+10. Docs — done. `docs/development.md` ("VM tests"), `docs/testing.md` (rows marked `vm`), this file.
 
-Exit criteria: `mise run vm-test` passes on a clean checkout with the golden VM present, with no pointer or menu bar change on the host. Every row it covers is marked in `docs/testing.md`.
+Exit criteria — met: `mise run vm-test` passes on a clean checkout with the golden VM present, with no pointer or menu bar change on the host. Every row it covers is marked in `docs/testing.md`.
 
 ## Phase 8: F8 — the floating bar
 
@@ -132,6 +132,7 @@ Sources/Ellipsis/
   EllipsisApp.swift
   AppDelegate.swift
   AppState.swift
+  RunningApplicationChanges.swift
   Accessibility/
     AccessibilityPermission.swift
   MenuBar/
@@ -154,8 +155,10 @@ Sources/Ellipsis/
 Tests/EllipsisTests/
 Tests/EllipsisVMTests/
   Guest.swift
-  MenuBar.swift
-  *Tests.swift
+  HideShowTests.swift
+  RehideTests.swift
+  ClockZoneTests.swift
+  DividerTests.swift
 Resources/
   Info.plist
   Fixture-Info.plist
