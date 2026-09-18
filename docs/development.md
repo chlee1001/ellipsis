@@ -27,6 +27,19 @@ scripts/vm.sh prepare                                          # the golden VM, 
 
 The Homebrew formula for `tart` does not install on current Homebrew, hence the tarball.
 
+To free the 40 GB the pulled image takes on the local disk, move `~/.tart/cache` to a NAS after `prepare`:
+
+```sh
+rsync -a ~/.tart/cache/ /path/on/nas/tart/cache/
+rsync -a --checksum --itemize-changes ~/.tart/cache/ /path/on/nas/tart/cache/   # prints nothing when the copy is good
+rm -r ~/.tart/cache
+ln -s /path/on/nas/tart/cache ~/.tart/cache
+```
+
+Not `mv` or `cp`: `copyfile` spins on `lseek` for ever when it copies the sparse disk image to NFS.
+
+Do this after `prepare`, not before: `tart pull` downloads into `~/.tart/tmp` and renames into `cache`, which fails across file systems. Keep `~/.tart/vms` local. `tart clone` is an APFS clone there, so a test run costs no space and no time; on NFS it would copy the whole image.
+
 Then:
 
 ```sh
