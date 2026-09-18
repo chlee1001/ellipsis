@@ -109,9 +109,9 @@ Displays with a notch drop the shown items that do not fit. Spec F8. The bar wor
 7. Without the permission — done. The click applies the single-app restriction and closes the bar; the set stays shown, so the rehide conditions and the icon end it. The tooltip says what the permission adds.
 8. Docs — done. README, `docs/testing.md` (F1 to F6), spec F8 (collapse, not "not drawn"; the default follows the display), this file.
 9. VM tests — done. `FloatingBarTests`, seven tests: a short region collapses items in menu bar mode (the `«` button appears); bar mode shows every app and nothing collapses, with the bar under the icon; an Option show adds the always-hidden set; each rehide condition closes the bar; a click in the bar is not outside; a click on an app without the permission leaves that item alone in the menu bar; a click with the permission opens the app's menu and the normal restriction returns after it closes. `FixtureW` (`scripts/bundle-fixture.sh W 7`, about 240 points) is the short region and `FixtureV` (nine menus, about 113) the one with no room for the front app's own item next to a shown one; a click on A there hides the others only because it must. The no-permission test runs only in a guest without the grant. Bugs the tests found on the way: `MenuBarManager` reapplied the restriction only for regular apps that launched (`didLaunchApplicationNotification` again); the clock zone's 300-point default covers the icon on a 1024-point display.
-10. Host check — pending. On the notch: does the notch region collapse the same way, with `«`; does `«` open with a real mouse; is the bar's default right; does a click in the bar open the item.
+10. Host check — done on the notch MacBook (2026-09-18). The bar is the default at first launch, hangs from the icon, and a click on an app opens its menu with the other items in place. Not checked: whether the notch collapses items behind `«` in menu bar mode, and whether `«` opens with a real mouse.
 
-Exit criteria: in the VM — met; on the laptop, a click on the icon shows every hidden app in the bar, a click on an app in the bar opens its menu, and the bar closes on each rehide condition.
+Exit criteria — met: on the laptop, a click on the icon shows every hidden app in the bar, a click on an app in the bar opens its menu, and the bar closes on each rehide condition.
 
 ## File layout
 
