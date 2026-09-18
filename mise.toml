@@ -58,3 +58,7 @@ scripts/release.sh "${version}"
 [tasks.sparkle-keys]
 description = "Run Sparkle's generate_keys (the EdDSA update key in the login keychain). Args pass through: -p prints the public key, -x/-f export/import"
 run = ".build/artifacts/sparkle/Sparkle/bin/generate_keys"
+
+[tasks.vm-test]
+description = "Run the VM tests in a fresh Tart clone of the golden VM (scripts/vm.sh prepare makes it). Args pass through to swift test"
+run = 'scripts/vm-test.sh "$@"'

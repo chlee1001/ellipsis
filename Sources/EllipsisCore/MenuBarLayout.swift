@@ -7,29 +7,44 @@ import ApplicationServices
 /// MenuBarAgent for a system item. Only MenuBarAgent is asked anything: the
 /// owner comes from the element's pid, so an unresponsive app cannot stall
 /// the read. Nothing here works without the Accessibility permission.
-struct MenuBarLayout: Sendable {
-    struct Item: Sendable {
+public struct MenuBarLayout: Sendable, Codable {
+    public struct Item: Sendable, Codable {
         /// Bundle identifier of the app that owns the item, nil for a system item.
-        var bundleIdentifier: String?
+        public var bundleIdentifier: String?
         /// `com.apple.menuextra.clock` and the like, nil for an app item.
-        var systemIdentifier: String?
+        public var systemIdentifier: String?
         /// Accessibility coordinates: origin at the top left of the primary display.
-        var frame: CGRect
+        public var frame: CGRect
+
+        public init(bundleIdentifier: String? = nil, systemIdentifier: String? = nil, frame: CGRect) {
+            self.bundleIdentifier = bundleIdentifier
+            self.systemIdentifier = systemIdentifier
+            self.frame = frame
+        }
     }
 
-    struct Display: Sendable {
+    public struct Display: Sendable, Codable {
         /// The menu bar, in Accessibility coordinates.
-        var frame: CGRect
-        var items: [Item]
+        public var frame: CGRect
+        public var items: [Item]
+
+        public init(frame: CGRect, items: [Item]) {
+            self.frame = frame
+            self.items = items
+        }
     }
 
-    var displays: [Display]
+    public var displays: [Display]
 
-    static let clockIdentifier = "com.apple.menuextra.clock"
+    public init(displays: [Display]) {
+        self.displays = displays
+    }
+
+    public static let clockIdentifier = "com.apple.menuextra.clock"
 
     /// Points from the right edge of the menu bar to the left edge of the
     /// clock. System items sit at the same offset on every display.
-    var clockOffset: CGFloat? {
+    public var clockOffset: CGFloat? {
         for display in displays {
             if let clock = display.items.first(where: { $0.systemIdentifier == Self.clockIdentifier }) {
                 return display.frame.maxX - clock.frame.minX
@@ -40,7 +55,7 @@ struct MenuBarLayout: Sendable {
 
     /// The app items on the display that holds `point`, split by their left
     /// edge against `point.x`. Accessibility coordinates.
-    func appItems(splitAt point: CGPoint) -> (left: Set<String>, right: Set<String>)? {
+    public func appItems(splitAt point: CGPoint) -> (left: Set<String>, right: Set<String>)? {
         guard let display = displays.first(where: { $0.frame.contains(point) }) else { return nil }
         var left = Set<String>()
         var right = Set<String>()
@@ -57,7 +72,7 @@ struct MenuBarLayout: Sendable {
 
     /// Nil when MenuBarAgent is not running or refuses, as it does without
     /// the permission. Off the main thread: every read is an IPC.
-    nonisolated static func read() -> MenuBarLayout? {
+    public nonisolated static func read() -> MenuBarLayout? {
         guard let agent = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.MenuBarAgent").first
         else { return nil }
         let agentPID = agent.processIdentifier

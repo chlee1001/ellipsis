@@ -8,13 +8,24 @@ let package = Package(
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.10.0"),
     ],
     targets: [
+        .target(
+            name: "EllipsisCore",
+            path: "Sources/EllipsisCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
         .executableTarget(
             name: "Ellipsis",
-            dependencies: ["Sparkle"],
+            dependencies: ["EllipsisCore", "Sparkle"],
             path: "Sources/Ellipsis",
             swiftSettings: [.swiftLanguageMode(.v6)],
             // bundle.sh puts Sparkle.framework in Contents/Frameworks.
             linkerSettings: [.unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])]
+        ),
+        .executableTarget(
+            name: "Probe",
+            dependencies: ["EllipsisCore"],
+            path: "Sources/Probe",
+            swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .executableTarget(
             name: "Fixture",
@@ -23,8 +34,16 @@ let package = Package(
         ),
         .testTarget(
             name: "EllipsisTests",
-            dependencies: ["Ellipsis"],
+            dependencies: ["Ellipsis", "EllipsisCore"],
             path: "Tests/EllipsisTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        // Drives the app in a Tart guest. Skipped unless ELLIPSIS_VM is set.
+        // scripts/vm-test.sh runs it.
+        .testTarget(
+            name: "EllipsisVMTests",
+            dependencies: ["EllipsisCore"],
+            path: "Tests/EllipsisVMTests",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
     ]

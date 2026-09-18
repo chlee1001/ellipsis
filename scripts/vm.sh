@@ -5,6 +5,7 @@
 #        scripts/vm.sh ip               print the guest IP, waiting for it
 #        scripts/vm.sh ssh [CMD...]     run a command in the guest, or open a shell
 #        scripts/vm.sh scp SRC... DST   copy into the guest; DST is a guest path
+#        scripts/vm.sh scp-from SRC DST copy a guest path out to DST on the host
 #        scripts/vm.sh stop | delete    stop, or stop and delete, $ELLIPSIS_VM
 set -euo pipefail
 
@@ -13,7 +14,10 @@ golden="${ELLIPSIS_VM_GOLDEN:-ellipsis-golden}"
 vm="${ELLIPSIS_VM:-ellipsis-test}"
 user="admin"
 key="$HOME/.tart/ellipsis_ed25519"
-ssh_opts=(-i "$key" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR)
+# The control socket keeps one connection open across the many short ssh
+# calls of a test run, so each one costs milliseconds, not a handshake.
+ssh_opts=(-i "$key" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR
+  -o ControlMaster=auto -o ControlPath="$HOME/.tart/ssh-%C" -o ControlPersist=120)
 
 ip() { tart ip "$1" --wait 120; }
 
@@ -58,6 +62,9 @@ case "${1:-}" in
     shift
     dst="${*: -1}"
     exec scp "${ssh_opts[@]}" -r "${@:1:$#-1}" "$user@$(ip "$vm"):$dst"
+    ;;
+  scp-from)
+    exec scp "${ssh_opts[@]}" -r "$user@$(ip "$vm"):$2" "$3"
     ;;
   stop)
     tart stop "$vm"

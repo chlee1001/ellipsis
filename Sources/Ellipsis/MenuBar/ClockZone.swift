@@ -1,4 +1,5 @@
 import AppKit
+import EllipsisCore
 import Observation
 
 /// Keeps `AppState.clockZoneWidth` close to the clock. With the Accessibility

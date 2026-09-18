@@ -1,6 +1,7 @@
 import ApplicationServices
 import Testing
 @testable import Ellipsis
+import EllipsisCore
 
 struct MenuBarLayoutTests {
     @Test func clockOffsetIsMeasuredFromTheRightEdge() {

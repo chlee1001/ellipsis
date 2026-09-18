@@ -1,4 +1,5 @@
 import AppKit
+import EllipsisCore
 
 /// Hides the shown sets again after a timeout, a click outside the menu bar,
 /// or a focus change. Each condition has its own setting. Armed while the

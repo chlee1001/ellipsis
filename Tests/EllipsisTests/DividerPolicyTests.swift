@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 @testable import Ellipsis
+import EllipsisCore
 
 struct DividerPolicyTests {
     @Test func leftJoinsAndRightLeavesWhileShown() {
