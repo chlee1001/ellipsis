@@ -29,8 +29,18 @@ final class MenuBarRestriction {
     private let configurationClass: NSObject.Type
     private let assertionClass: NSObject.Type
     private var assertion: NSObject?
+    /// Callers waiting for the newest assertion to report back.
+    private var activationWaiters: [CheckedContinuation<Void, Never>] = []
+    private var isActivating = false
 
     var isActive: Bool { assertion != nil }
+
+    /// Returns once the newest assertion has reported back, or at once if
+    /// it already has. MenuBarAgent lays out only after that.
+    func waitUntilActivated() async {
+        guard isActivating else { return }
+        await withCheckedContinuation { activationWaiters.append($0) }
+    }
 
     init() throws {
         guard dlopen(Self.frameworkPath, RTLD_NOW) != nil else {
@@ -64,19 +74,39 @@ final class MenuBarRestriction {
             .takeUnretainedValue()
         let assertion = assertionClass.init()
         nonisolated(unsafe) let previous = self.assertion
-        let completion: @convention(block) (Any?) -> Void = { error in
+        isActivating = true
+        let completion: @convention(block) (Any?) -> Void = { [weak self] error in
             if let error {
                 NSLog("Ellipsis: restriction failed: %@", String(describing: error))
             }
             _ = previous?.perform(NSSelectorFromString("invalidate"))
+            Task { @MainActor in
+                self?.activated(assertion)
+            }
         }
         _ = assertion.perform(NSSelectorFromString("activateWithConfiguration:completionHandler:"),
                               with: configuration, with: completion)
         self.assertion = assertion
     }
 
+    private func activated(_ assertion: NSObject) {
+        guard assertion === self.assertion else { return }  // an older one; the newest is still on its way
+        isActivating = false
+        let waiters = activationWaiters
+        activationWaiters = []
+        for waiter in waiters {
+            waiter.resume()
+        }
+    }
+
     func release() {
         _ = assertion?.perform(NSSelectorFromString("invalidate"))
         assertion = nil
+        isActivating = false
+        let waiters = activationWaiters
+        activationWaiters = []
+        for waiter in waiters {
+            waiter.resume()
+        }
     }
 }

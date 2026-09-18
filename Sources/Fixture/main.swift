@@ -14,8 +14,8 @@ final class Fixture: NSObject, NSApplicationDelegate {
         if let count = Bundle.main.object(forInfoDictionaryKey: "EllipsisFixtureMenuCount") as? Int, count > 0 {
             let mainMenu = NSMenu()
             for number in 1...count {
-                let title = NSMenuItem(title: "Menu Number \(number)", action: nil, keyEquivalent: "")
-                title.submenu = NSMenu(title: "Menu Number \(number)")
+                let title = NSMenuItem(title: "Menu \(number)", action: nil, keyEquivalent: "")
+                title.submenu = NSMenu(title: "Menu \(number)")
                 title.submenu?.addItem(withTitle: "Nothing", action: nil, keyEquivalent: "")
                 mainMenu.addItem(title)
             }
