@@ -16,6 +16,11 @@ let package = Package(
             // bundle.sh puts Sparkle.framework in Contents/Frameworks.
             linkerSettings: [.unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])]
         ),
+        .executableTarget(
+            name: "Fixture",
+            path: "Sources/Fixture",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
         .testTarget(
             name: "EllipsisTests",
             dependencies: ["Ellipsis"],
