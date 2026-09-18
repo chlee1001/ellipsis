@@ -233,27 +233,28 @@ final class MenuBarManager {
         applyCurrentState()
         guard permission.isTrusted else { return }
         clickThrough = Task { [weak self] in
-            // MenuBarAgent animates a new layout for about a second, so the
-            // item counts as placed only once its frame holds still between
-            // two reads. Placed and drawn: press it. Placed and collapsed:
-            // hide every other app and go on waiting.
+            // The item is pressed the moment it is drawn: the element is the
+            // app's button, wherever the animation has it. MenuBarAgent
+            // animates a new layout for about a second, and mid-way the
+            // item can overlap a neighbour, so it counts as collapsed only
+            // once its frame holds still between two reads. Collapsed: hide
+            // every other app and go on waiting.
             var pressed = false
             var lastFrame: CGRect?
             let deadline = ContinuousClock.now + .seconds(4)
             while ContinuousClock.now < deadline {
-                try? await Task.sleep(for: .milliseconds(300))
+                try? await Task.sleep(for: .milliseconds(150))
                 guard !Task.isCancelled, let self else { return }
                 let layout = await Task.detached(priority: .userInitiated) { MenuBarLayout.read() }.value
-                let item = layout?.displays.lazy.flatMap(\.items).first { $0.bundleIdentifier == id }
-                let placed = item != nil && item?.frame == lastFrame
-                lastFrame = item?.frame
-                guard placed, let item else { continue }
                 if let drawn = layout?.drawnItem(of: id), let element = drawn.element {
                     pressed = await Task.detached(priority: .userInitiated) { element.press() }.value
-                    Self.log.info("pressed \(id, privacy: .public) at \(Int(item.frame.minX)): \(pressed)")
+                    Self.log.info("pressed \(id, privacy: .public) at \(Int(drawn.frame.minX)): \(pressed)")
                     break
                 }
-                guard !self.clickThroughHidesEveryOtherApp else { continue }
+                let item = layout?.displays.lazy.flatMap(\.items).first { $0.bundleIdentifier == id }
+                let collapsed = item != nil && item?.frame == lastFrame
+                lastFrame = item?.frame
+                guard collapsed, let item, !self.clickThroughHidesEveryOtherApp else { continue }
                 Self.log.info("\(id, privacy: .public) is collapsed at \(Int(item.frame.minX)); hiding every other app")
                 self.clickThroughHidesEveryOtherApp = true
                 self.applyCurrentState()
