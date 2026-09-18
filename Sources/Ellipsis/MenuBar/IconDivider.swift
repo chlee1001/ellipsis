@@ -79,10 +79,8 @@ final class IconDivider {
             dragMonitors.append(local)
         }
         // A newly launched app lands wherever its item was last.
-        let launches = NSWorkspace.shared.notificationCenter
-            .notifications(named: NSWorkspace.didLaunchApplicationNotification)
         launchObserver = Task { [weak self] in
-            for await _ in launches.map({ _ in () }) {
+            for await _ in NSWorkspace.runningApplicationChanges() {
                 self?.scheduleRead()
             }
         }
