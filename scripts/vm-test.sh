@@ -19,6 +19,7 @@ fixtures=()
 for n in A B C; do
   fixtures+=("$("$root/scripts/bundle-fixture.sh" "$n")")
 done
+fixtures+=("$("$root/scripts/bundle-fixture.sh" W 5)")
 swift build --package-path "$root" --product Probe >&2
 probe="$(swift build --package-path "$root" --product Probe --show-bin-path)/Probe"
 
@@ -26,7 +27,7 @@ if [[ -z "${ELLIPSIS_VM_REUSE:-}" ]]; then
   "$vm" clone >&2
 fi
 
-"$vm" ssh 'pkill -x EllipsisDev; pkill -x FixtureA; pkill -x FixtureB; pkill -x FixtureC; rm -rf screenshots; true'
+"$vm" ssh 'pkill -x EllipsisDev; pkill -x FixtureA; pkill -x FixtureB; pkill -x FixtureC; pkill -x FixtureW; rm -rf screenshots; true'
 "$vm" scp "$app" "${fixtures[@]}" /Applications/
 "$vm" scp "$probe" /Users/admin/probe
 

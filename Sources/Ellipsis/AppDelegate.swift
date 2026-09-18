@@ -12,7 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var divider: IconDivider?
 
     override init() {
-        AppState.registerDefaults()
+        AppState.registerDefaults(hasNotch: NSScreen.screens.contains { $0.safeAreaInsets.top > 0 })
         sets = HiddenSets()
         state = AppState()
         super.init()
@@ -26,7 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Self.quit(with: error)
             return
         }
-        menuBar = MenuBarManager(restriction: restriction, sets: sets, state: state, updater: updater) { [unowned self] in
+        menuBar = MenuBarManager(restriction: restriction, sets: sets, state: state, permission: permission, updater: updater) { [unowned self] in
             showSettings()
         }
         permission.askAtLaunchIfNeeded()

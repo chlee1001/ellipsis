@@ -14,6 +14,15 @@ final class AppState {
         static let rehideTimeout = "rehideTimeout"
         static let clockZoneWidth = "clockZoneWidth"
         static let hidesAppsLeftOfIcon = "hidesAppsLeftOfIcon"
+        static let hiddenItemsPlacement = "hiddenItemsPlacement"
+    }
+
+    /// Where a shown set goes. See spec F8.
+    enum HiddenItemsPlacement: String, CaseIterable {
+        /// The restriction lifts and the items return to the menu bar.
+        case menuBar
+        /// The restriction stays and a panel below the menu bar lists the apps.
+        case floatingBar
     }
 
     static let defaults: [String: Any] = [
@@ -24,9 +33,17 @@ final class AppState {
         Key.rehideTimeout: 15.0,
         Key.clockZoneWidth: 300.0,
         Key.hidesAppsLeftOfIcon: false,
+        Key.hiddenItemsPlacement: HiddenItemsPlacement.menuBar.rawValue,
     ]
 
-    static func registerDefaults(in store: UserDefaults = .standard) {
+    /// `hasNotch` picks the placement default: a notch collapses shown items
+    /// that do not fit, so the bar is the default there. Registered, not
+    /// written, so a user who never chose follows the display at each launch.
+    static func registerDefaults(in store: UserDefaults = .standard, hasNotch: Bool = false) {
+        var defaults = defaults
+        if hasNotch {
+            defaults[Key.hiddenItemsPlacement] = HiddenItemsPlacement.floatingBar.rawValue
+        }
         store.register(defaults: defaults)
     }
 
@@ -41,6 +58,11 @@ final class AppState {
         rehideTimeout = store.double(forKey: Key.rehideTimeout)
         clockZoneWidth = store.double(forKey: Key.clockZoneWidth)
         hidesAppsLeftOfIcon = store.bool(forKey: Key.hidesAppsLeftOfIcon)
+        hiddenItemsPlacement = Self.placement(in: store)
+    }
+
+    private static func placement(in store: UserDefaults) -> HiddenItemsPlacement {
+        store.string(forKey: Key.hiddenItemsPlacement).flatMap(HiddenItemsPlacement.init) ?? .menuBar
     }
 
     /// Reads every value from the store again, after an import wrote to it.
@@ -52,6 +74,7 @@ final class AppState {
         rehideTimeout = store.double(forKey: Key.rehideTimeout)
         clockZoneWidth = store.double(forKey: Key.clockZoneWidth)
         hidesAppsLeftOfIcon = store.bool(forKey: Key.hidesAppsLeftOfIcon)
+        hiddenItemsPlacement = Self.placement(in: store)
     }
 
     var isAlwaysHiddenEnabled: Bool {
@@ -80,5 +103,8 @@ final class AppState {
     /// Needs the Accessibility permission. See `IconDivider`.
     var hidesAppsLeftOfIcon: Bool {
         didSet { store.set(hidesAppsLeftOfIcon, forKey: Key.hidesAppsLeftOfIcon) }
+    }
+    var hiddenItemsPlacement: HiddenItemsPlacement {
+        didSet { store.set(hiddenItemsPlacement.rawValue, forKey: Key.hiddenItemsPlacement) }
     }
 }

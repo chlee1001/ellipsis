@@ -15,11 +15,37 @@ public struct MenuBarLayout: Sendable, Codable {
         public var systemIdentifier: String?
         /// Accessibility coordinates: origin at the top left of the primary display.
         public var frame: CGRect
+        /// The element that draws the item, for `press`. Not encoded.
+        public var element: AccessibilityElement?
 
-        public init(bundleIdentifier: String? = nil, systemIdentifier: String? = nil, frame: CGRect) {
+        enum CodingKeys: CodingKey {
+            case bundleIdentifier, systemIdentifier, frame
+        }
+
+        public init(
+            bundleIdentifier: String? = nil,
+            systemIdentifier: String? = nil,
+            frame: CGRect,
+            element: AccessibilityElement? = nil
+        ) {
             self.bundleIdentifier = bundleIdentifier
             self.systemIdentifier = systemIdentifier
             self.frame = frame
+            self.element = element
+        }
+    }
+
+    /// An `AXUIElement` that may cross threads. The element is a token for
+    /// an IPC endpoint; every call on it is its own round trip.
+    public struct AccessibilityElement: @unchecked Sendable {
+        let element: AXUIElement
+
+        /// Presses the element as a click would, with a one-second timeout
+        /// so an unresponsive app does not stall the caller. Off the main
+        /// thread: it is an IPC.
+        public nonisolated func press() -> Bool {
+            AXUIElementSetMessagingTimeout(element, 1)
+            return AXUIElementPerformAction(element, kAXPressAction as CFString) == .success
         }
     }
 
@@ -89,7 +115,7 @@ public struct MenuBarLayout: Sendable, Codable {
                     return Item(systemIdentifier: identifier, frame: frame)
                 }
                 let bundleID = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier
-                return Item(bundleIdentifier: bundleID, frame: frame)
+                return Item(bundleIdentifier: bundleID, frame: frame, element: AccessibilityElement(element: owner))
             }
             return Display(frame: window.frame ?? .zero, items: items)
         }

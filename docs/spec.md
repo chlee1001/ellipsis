@@ -129,16 +129,16 @@ Off by default. When on, the Ellipsis icon divides the menu bar like the Bartend
 
 ### F8: The floating bar
 
-A notch splits the menu bar. `MenuBarAgent` never pushes an item off-screen, so a shown item that does not fit right of the notch is not drawn at all. On a display with a notch, "show" loses items. The floating bar shows the hidden apps in a panel below the menu bar instead. The restriction stays active and nothing in the menu bar moves.
+A notch splits the menu bar. `MenuBarAgent` never pushes an item off-screen: it fills the status item region from the right, collapses the leftmost items that do not fit, and draws a system `«` button in their place (`docs/phase8.md`). The Ellipsis icon is the leftmost, so it collapses first. On a display with a notch, "show" loses items and the icon. The floating bar shows the hidden apps in a panel below the menu bar instead. The restriction stays active and nothing in the menu bar moves.
 
 No image of an item is available. On macOS 27 the window server has no window per item, so the ScreenCaptureKit method of Ice (capture each item window) does not work. A capture of the menu bar region needs the Screen Recording permission, and it cannot capture an item that is not drawn. So the bar shows the app icon (`NSRunningApplication.icon`) of each hidden app. Hiding is per app, so one icon per app is the same granularity.
 
-- Settings › General has "Show hidden items": "In the menu bar" or "In a bar below the menu bar". The default is the bar when a screen has a notch (`NSScreen.safeAreaInsets.top` is more than zero), and the menu bar otherwise.
+- Settings › General has "Show hidden items": "In the menu bar" or "In a bar below the menu bar". Until the user picks one, the default is the bar when a screen has a notch at launch (`NSScreen.safeAreaInsets.top` is more than zero), and the menu bar otherwise.
 - In bar mode, a click on the icon shows the panel with one icon per app in the hidden set. An Option click adds the always-hidden set. The icon changes to the chevron as it does today.
 - The panel is a non-activating `NSPanel` at the status bar level, on every Space and next to full-screen apps. Its right edge is under the Ellipsis icon. Its top is at the bottom edge of the menu bar. The frontmost app keeps the focus.
 - Each icon has a tooltip with the app name. A hover highlights it.
 - The rehide conditions of F3 close the panel: timeout, a click outside the panel and the menu bar, and a focus change.
-- A click on an icon opens the item of that app (click-through). This needs the Accessibility permission. Ellipsis applies a restriction that hides every app except that app and Ellipsis, so the item always fits next to the notch. Then it reads the menu bar (`MenuBarLayout`), finds the item, and presses it over Accessibility (`AXPress`). The panel closes. Ellipsis applies the normal restriction again when no menu is open.
+- A click on an icon opens the item of that app (click-through). This needs the Accessibility permission. Ellipsis applies a restriction that hides every app except that app and Ellipsis, so the item fits next to the notch whenever the region holds two items. Then it reads the menu bar (`MenuBarLayout`), finds the item, and presses it over Accessibility (`AXPress`). The panel closes. Ellipsis applies the normal restriction again when no menu is open.
 - Without the permission, a click on an icon applies the same single-app restriction and arms the rehide. The user clicks the item in the menu bar. The tooltip says that the Accessibility permission opens the item with one click.
 - An app with an item that changes (a timer, a meter) shows only its app icon in the bar. The README lists this limit.
 

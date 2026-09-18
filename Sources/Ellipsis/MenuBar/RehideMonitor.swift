@@ -10,6 +10,8 @@ final class RehideMonitor {
     private let sets: HiddenSets
 
     private(set) var isArmed = false
+    /// The floating bar's frame while it is visible. A click in it is not outside.
+    var panelFrame: () -> NSRect? = { nil }
     private var timer: Task<Void, Never>?
     private var clickMonitor: Any?
     private var focusObservers: [NSObjectProtocol] = []
@@ -94,7 +96,7 @@ final class RehideMonitor {
         guard isArmed else { return }
         let menuBar = MenuBarGeometry.current
         let menus = MenuBarGeometry.openMenuFrames()
-        if RehidePolicy.shouldHide(afterClickAt: point, menuBar: menuBar, menus: menus) {
+        if RehidePolicy.shouldHide(afterClickAt: point, menuBar: menuBar, menus: menus, panel: panelFrame()) {
             requestHide()
         }
     }

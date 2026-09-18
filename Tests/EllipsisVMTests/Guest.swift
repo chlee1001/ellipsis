@@ -66,6 +66,10 @@ struct Guest: Sendable {
         try run("pkill -9 -x \(app) || true")
     }
 
+    func frontmostApp() throws -> String {
+        try run("osascript -e 'tell application \"System Events\" to get name of first process whose frontmost is true'")
+    }
+
     func isRunning(_ app: String) throws -> Bool {
         try !run("pgrep -x \(app) || true").isEmpty
     }
@@ -110,6 +114,8 @@ struct Guest: Sendable {
     /// so both are checked.
     func startFixtures() throws {
         try quit(Self.appName)
+        try quit(Fixture.wideName)
+        try run("pkill -x 'System Settings' || true")  // a stray click on a notification opens it
         try waitUntilSettled()
         let positions = try fixturePositions()
         let ordered = Fixture.all.map { positions[$0] ?? .infinity }
@@ -149,6 +155,9 @@ struct Guest: Sendable {
             "rehideOnTimeout": .bool(false),
             "rehideOnClickOutside": .bool(false),
             "rehideOnFocusChange": .bool(false),
+            // The default, 300, covers the icon on the guest's 1024-point
+            // display, and the pointer in the zone lifts the restriction.
+            "clockZoneWidth": .double(150),
         ]
         all.merge(settings) { _, new in new }
         for (key, value) in all.sorted(by: { $0.key < $1.key }) {
@@ -177,12 +186,14 @@ struct Guest: Sendable {
     enum Setting {
         case bool(Bool)
         case double(Double)
+        case string(String)
         case strings([String])
 
         var argument: String {
             switch self {
             case .bool(let value): "-bool \(value)"
             case .double(let value): "-float \(value)"
+            case .string(let value): "-string '\(value)'"
             case .strings(let values): "-array " + values.map { "'\($0)'" }.joined(separator: " ")
             }
         }
@@ -218,13 +229,52 @@ struct Guest: Sendable {
         try probe(arguments)
     }
 
+    /// Clicks the icon and parks the pointer on the desktop, out of the
+    /// clock zone and off the menu bar.
     func clickIcon(option: Bool = false) throws {
         guard let frame = try iconFrame() else { throw CommandFailure(command: "icon", status: 1, output: "no Ellipsis icon") }
         try click(frame, option: option)
+        try probe("move 400 400")
     }
 
     func openMenus() throws -> [CGRect] {
         try probe("menus")
+    }
+
+    // MARK: Accessibility trees
+
+    struct AXNode: Decodable {
+        var role: String?
+        var description: String?
+        var title: String?
+        var frame: CGRect?
+        var children: [AXNode]
+
+        var all: [AXNode] { [self] + children.flatMap(\.all) }
+    }
+
+    func accessibilityTree(of bundleIdentifier: String) throws -> [AXNode] {
+        try probe("inspect \(bundleIdentifier)")
+    }
+
+    /// macOS 27 draws this button where it collapsed the items that did not fit.
+    func hasOverflowButton() throws -> Bool {
+        try accessibilityTree(of: "com.apple.MenuBarAgent").flatMap(\.all)
+            .contains { $0.description == "Show Hidden Menu Bar Items" }
+    }
+
+    /// The floating bar's buttons by app name, left to right, or nil while
+    /// the bar is not on screen.
+    func barButtons() throws -> [(name: String, frame: CGRect)]? {
+        let windows = (try? accessibilityTree(of: Self.appIdentifier)) ?? []
+        guard let bar = windows.first else { return nil }
+        return bar.all.filter { $0.role == "AXButton" }
+            .compactMap { node in node.frame.map { (node.description ?? node.title ?? "", $0) } }
+            .sorted { $0.frame.minX < $1.frame.minX }
+    }
+
+    func barFrame() throws -> CGRect? {
+        try accessibilityTree(of: Self.appIdentifier).first?.frame
     }
 
     func screenshot(_ name: String) throws {
@@ -267,6 +317,9 @@ enum Fixture {
     static let b = "au.ronny.EllipsisFixture.B"
     static let c = "au.ronny.EllipsisFixture.C"
     static let all = [a, b, c]
+    /// A regular app with five menus: frontmost, it leaves about 217
+    /// points for status items on the guest's display.
+    static let wideName = "FixtureW"
 
     static func name(_ identifier: String) -> String {
         "Fixture" + identifier.split(separator: ".").last!

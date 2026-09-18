@@ -40,5 +40,12 @@ Numbers match the acceptance criteria in `docs/spec.md`. A row marked `vm` has a
 | D3 | Show the set. Cmd-drag the icon to the far left. | Every app leaves the hidden set and stays when the set hides again. | vm |
 | D4 | Cmd-drag an app's item from right of the icon to left of it. | It hides. | vm |
 | D5 | Settings › Hidden: turn the switch off. | The picker is editable. The set is unchanged. | vm |
+| F1 | A front app with a wide menu bar (or a notch). "In the menu bar" mode. Show the set. | macOS collapses what does not fit behind `«`. | vm |
+| F2 | Same, "In a bar below the menu bar" mode. Click the icon. | A bar under the icon lists the hidden apps. Nothing in the menu bar moves. Icon shows `‹`. | vm |
+| F3 | Option-click the icon in bar mode. | The bar adds the always-hidden apps. | vm |
+| F4 | Bar mode. Each rehide condition. | The bar closes. A click in the bar does not close it. | vm |
+| F5 | Bar mode, no Accessibility. Click an app in the bar. | That app's item appears alone in the menu bar; the bar closes. The icon hides it again. | vm |
+| F6 | Bar mode, with Accessibility. Click an app in the bar. | Its menu opens. Picking an item runs it; the set hides after the menu closes. | vm |
+| F7 | On the notch MacBook, first launch. | "Show hidden items" defaults to the bar. Settings › General switches it. | |
 | 10 | Release build: `spctl --assess`, `stapler validate`. | Both pass. | Phase 5 |
 | 11 | Clean checkout: `swift build`, every script. | No Xcode project needed. | Phase 5 |

@@ -22,9 +22,13 @@ enum RehidePolicy {
         !menuBarMenus(menus, menuBar: menuBar).isEmpty
     }
 
-    /// A click in the menu bar or inside an open menu is not "outside".
-    static func shouldHide(afterClickAt point: NSPoint, menuBar: MenuBarGeometry, menus: [NSRect]) -> Bool {
+    /// A click in the menu bar, inside an open menu, or inside the floating
+    /// bar (`panel`) is not "outside".
+    static func shouldHide(
+        afterClickAt point: NSPoint, menuBar: MenuBarGeometry, menus: [NSRect], panel: NSRect? = nil
+    ) -> Bool {
         if menuBar.contains(point) { return false }
+        if let panel, panel.contains(point) { return false }
         if menuBarMenus(menus, menuBar: menuBar).contains(where: { $0.contains(point) }) { return false }
         return true
     }
