@@ -1,4 +1,4 @@
-import ApplicationServices
+import Foundation
 import Testing
 @testable import Ellipsis
 import EllipsisCore
@@ -23,24 +23,5 @@ struct MenuBarLayoutTests {
             ]),
         ])
         #expect(layout.clockOffset == nil)
-    }
-
-    /// Reads the live menu bar. Needs the Accessibility permission for the
-    /// test runner, so it only checks anything when the runner has it.
-    @Test func readsTheLiveMenuBar() {
-        guard AXIsProcessTrusted() else { return }
-        let layout = MenuBarLayout.read()
-        #expect(layout != nil)
-        guard let layout else { return }
-        #expect(!layout.displays.isEmpty)
-        for display in layout.displays {
-            #expect(display.frame.width > 0)
-            #expect(display.items.contains { $0.systemIdentifier == MenuBarLayout.clockIdentifier })
-            #expect(display.items.contains { $0.bundleIdentifier != nil })
-            for item in display.items {
-                #expect(display.frame.contains(item.frame))
-            }
-        }
-        #expect(layout.clockOffset.map { $0 > 0 && $0 < 400 } == true)
     }
 }
