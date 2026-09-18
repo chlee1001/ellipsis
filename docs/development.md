@@ -54,6 +54,24 @@ Without `ELLIPSIS_VM` the suites skip, so `mise run test` and CI stay unit tests
 
 `DEVELOPER_ID` selects a different signing identity. `NOTARY_PROFILE` selects a different notarytool profile. The scripts are `bundle.sh`, `sign.sh`, `sign-sparkle.sh`, `notarize.sh`, `release.sh`, `publish.sh` and `make-icon.sh`. Each one runs on its own.
 
+## A second machine
+
+The release credentials live in the login keychain of the machine that made the first release. To release from another machine, move three things over. `gh auth login` is the fourth, and needs no file.
+
+On the release machine:
+
+1. Certificates with their private keys: Xcode › Settings › Accounts › your Apple ID › ⚙ › "Export Apple ID and Code Signing Assets…" writes a `.developerprofile` with every certificate and key, the Developer ID Application identity among them. Keychain Access › My Certificates › right-click the identity › Export writes a `.p12` with only that one.
+2. The Sparkle key: `mise run sparkle-keys -- -x sparkle.key`.
+3. The app-specific password for notarytool cannot be exported. Use the one you have, or make a new one at appleid.apple.com.
+
+On the new machine:
+
+1. Open the `.developerprofile` (Xcode imports it) or the `.p12`. `security find-identity -v -p codesigning` then lists "Developer ID Application".
+2. `mise run sparkle-keys -- -f sparkle.key`, then erase the file. `mise run sparkle-keys -- -p` must print the `SUPublicEDKey` in `Resources/Info.plist`; a different key strands every installed copy (see "The update key").
+3. `xcrun notarytool store-credentials ellipsis --apple-id you@example.com --team-id TEAMID --password <app-specific-password>`.
+
+Without the Developer ID identity, `scripts/bundle.sh` signs a debug build with an Apple Development identity if there is one, else ad hoc. Only a certificate keeps the Accessibility grant across rebuilds. A new Developer ID Application certificate can be made in Xcode › Settings › Accounts › Manage Certificates (account holder only, five per team) and signs future releases as well as the old one; only the Sparkle key has to be the original.
+
 ## Updates
 
 Ellipsis uses [Sparkle 2](https://sparkle-project.org) from SwiftPM. `SUFeedURL` in `Resources/Info.plist` is `https://github.com/ronny/ellipsis/releases/latest/download/appcast.xml`. GitHub serves the `appcast.xml` asset of the newest release that is not a draft or a pre-release. Each release has an appcast with one item, itself, so the newest release is the only update that Sparkle sees.
