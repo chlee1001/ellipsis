@@ -68,6 +68,10 @@ public struct MenuBarLayout: Sendable, Codable {
 
     public static let clockIdentifier = "com.apple.menuextra.clock"
 
+    /// The `«` button macOS 27 draws where it collapsed the items that did
+    /// not fit. Not a menu extra: the identifier is ours.
+    public static let overflowIdentifier = "au.ronny.Ellipsis.overflow"
+
     /// Points from the right edge of the menu bar to the left edge of the
     /// clock. System items sit at the same offset on every display.
     public var clockOffset: CGFloat? {
@@ -98,8 +102,10 @@ public struct MenuBarLayout: Sendable, Codable {
 
     /// The item of `bundleIdentifier`, if it is drawn. macOS 27 collapses
     /// the items that do not fit: they keep a frame, stacked on top of one
-    /// another at the left end of the region, so an item whose frame
-    /// overlaps another's is not on screen.
+    /// another at the left end of the region, and the `«` button is drawn
+    /// where the drawn items start. So an item is not on screen when its
+    /// frame overlaps another's, or starts left of the button. The second
+    /// test matters when one item alone collapses: nothing stacks on it.
     public func drawnItem(of bundleIdentifier: String) -> Item? {
         for display in displays {
             guard let item = display.items.first(where: { $0.bundleIdentifier == bundleIdentifier }) else { continue }
@@ -107,7 +113,9 @@ public struct MenuBarLayout: Sendable, Codable {
                 other.bundleIdentifier != bundleIdentifier
                     && other.frame.intersection(item.frame).width > 2
             }
-            return overlapped ? nil : item
+            let overflow = display.items.first { $0.systemIdentifier == Self.overflowIdentifier }
+            let collapsed = overflow.map { item.frame.minX < $0.frame.minX } ?? false
+            return overlapped || collapsed ? nil : item
         }
         return nil
     }
@@ -154,7 +162,12 @@ public struct MenuBarLayout: Sendable, Codable {
         guard let windows: [AXUIElement] = app.attribute(kAXWindowsAttribute) else { return nil }
         let displays = windows.map { window in
             let items = window.children.compactMap { slot -> Item? in
-                guard let frame = slot.frame, let owner = slot.children.first else { return nil }
+                guard let frame = slot.frame else { return nil }
+                guard let owner = slot.children.first else {
+                    // The `«` button is the one childless slot, an AXButton.
+                    let role: String? = slot.attribute(kAXRoleAttribute)
+                    return role == kAXButtonRole ? Item(systemIdentifier: overflowIdentifier, frame: frame) : nil
+                }
                 var pid: pid_t = 0
                 AXUIElementGetPid(owner, &pid)
                 if pid == agentPID {
