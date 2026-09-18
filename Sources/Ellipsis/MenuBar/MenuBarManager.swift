@@ -65,10 +65,8 @@ final class MenuBarManager {
         installClockHover()
 
         // A newly launched app is not in the allow-list snapshot, so it would hide.
-        let launches = NSWorkspace.shared.notificationCenter
-            .notifications(named: NSWorkspace.didLaunchApplicationNotification)
         launchObserver = Task { [weak self] in
-            for await _ in launches.map({ _ in () }) {
+            for await _ in NSWorkspace.runningApplicationChanges() {
                 guard let self, restriction.isActive else { continue }
                 self.applyCurrentState()
             }

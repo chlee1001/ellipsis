@@ -71,6 +71,17 @@ struct HideShowTests {
         try guest.expectStable("B stays visible") { try guest.appItems().contains(Fixture.b) }
     }
 
+    /// The restriction is an allow-list of the running apps, so an app that
+    /// launches later needs a new one.
+    @Test func appLaunchedWhileHiddenStaysVisible() throws {
+        try guest.quit(Fixture.name(Fixture.c))
+        try guest.launchEllipsis(["hiddenBundleIdentifiers": .strings([Fixture.a])])
+        try guest.waitUntil("A hides") { try !guest.appItems().contains(Fixture.a) }
+        try guest.launch(Fixture.name(Fixture.c))
+        try guest.waitUntil("C appears") { try guest.appItems().contains(Fixture.c) }
+        try guest.expectStable("C stays") { try guest.appItems().contains(Fixture.c) }
+    }
+
     @Test func quitReturnsEveryItem() throws {
         try guest.launchEllipsis(["hiddenBundleIdentifiers": .strings([Fixture.a])])
         try guest.waitUntil("A hides") { try !guest.appItems().contains(Fixture.a) }
