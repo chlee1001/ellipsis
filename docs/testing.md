@@ -47,6 +47,6 @@ Numbers match the acceptance criteria in `docs/spec.md`. A row marked `vm` has a
 | F5 | Bar mode, no Accessibility. Click an app in the bar. | That app's item appears alone in the menu bar; the bar closes. The icon hides it again. | vm |
 | F6 | Bar mode, with Accessibility. Click an app in the bar. | Its menu opens; the other visible items stay. Picking an item runs it; the set hides after the menu closes. | vm |
 | F6a | Same, with a front app whose menus leave room for one item only. | The other apps hide while the menu is open and return after. | vm |
-| F7 | On the notch MacBook, first launch. | "Show hidden items" defaults to the bar. Settings › General switches it. | |
+| F7 | On the notch MacBook, first launch. | "Show hidden items" defaults to the bar. Settings › General switches it. | Pass |
 | 10 | Release build: `spctl --assess`, `stapler validate`. | Both pass. | Phase 5 |
 | 11 | Clean checkout: `swift build`, every script. | No Xcode project needed. | Phase 5 |
