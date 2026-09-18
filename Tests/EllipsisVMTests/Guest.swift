@@ -115,6 +115,7 @@ struct Guest: Sendable {
     func startFixtures() throws {
         try quit(Self.appName)
         try quit(Fixture.wideName)
+        try quit(Fixture.widerName)
         try run("pkill -x 'System Settings' || true")  // a stray click on a notification opens it
         try waitUntilSettled()
         let positions = try fixturePositions()
@@ -212,6 +213,11 @@ struct Guest: Sendable {
 
     func appItems() throws -> Set<String> {
         Set(try items().compactMap(\.bundleIdentifier))
+    }
+
+    /// Whether the app's item is on screen: in the layout and not collapsed.
+    func isDrawn(_ bundleIdentifier: String) throws -> Bool {
+        try layout().drawnItem(of: bundleIdentifier) != nil
     }
 
     func frame(of bundleIdentifier: String) throws -> CGRect? {
@@ -317,9 +323,15 @@ enum Fixture {
     static let b = "au.ronny.EllipsisFixture.B"
     static let c = "au.ronny.EllipsisFixture.C"
     static let all = [a, b, c]
-    /// A regular app with five menus: frontmost, it leaves about 217
-    /// points for status items on the guest's display.
+    /// A regular app with seven menus: frontmost, it leaves about 240
+    /// points for status items on the guest's display. Room for the icon,
+    /// its own item and one fixture (176), not for three fixtures (247).
     static let wideName = "FixtureW"
+    /// Nine menus, about 113 points: room for the icon and one fixture
+    /// (106), not for the app's own item as well (176).
+    static let widerName = "FixtureV"
+    static let w = "au.ronny.EllipsisFixture.W"
+    static let v = "au.ronny.EllipsisFixture.V"
 
     static func name(_ identifier: String) -> String {
         "Fixture" + identifier.split(separator: ".").last!

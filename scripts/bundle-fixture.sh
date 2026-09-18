@@ -3,7 +3,7 @@
 # identifier au.ronny.EllipsisFixture.N. The status item's title is FixtureN.
 # With a menu count the app is a regular app with that many menus, so it
 # takes most of the menu bar while it is frontmost: the stand-in for a notch.
-# Each menu is about 100 points wide on the guest's 1024-point display.
+# Each menu is about 55 points wide on the guest's 1024-point display.
 # Usage: scripts/bundle-fixture.sh N [MENUS]   (N is one letter or word, e.g. A)
 set -euo pipefail
 

@@ -58,17 +58,19 @@ func node(_ element: AXUIElement, depth: Int) -> Node {
         guard AXUIElementCopyAttributeValue(element, name as CFString, &value) == .success, let value else { return nil }
         return value as? String ?? (value as? NSNumber)?.stringValue
     }
-    func axValue<T>(_ name: String, _ type: AXValueType, _ zero: T) -> T? {
+    func axValue(_ name: String) -> AXValue? {
         var value: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, name as CFString, &value) == .success, let value,
               CFGetTypeID(value) == AXValueGetTypeID() else { return nil }
-        var result = zero
-        return AXValueGetValue(value as! AXValue, type, &result) ? result : nil
+        return (value as! AXValue)
     }
     var actions: CFArray?
     AXUIElementCopyActionNames(element, &actions)
     var frame: CGRect?
-    if let origin = axValue(kAXPositionAttribute, .cgPoint, CGPoint.zero), let size = axValue(kAXSizeAttribute, .cgSize, CGSize.zero) {
+    var origin = CGPoint.zero
+    var size = CGSize.zero
+    if let position = axValue(kAXPositionAttribute), AXValueGetValue(position, .cgPoint, &origin),
+       let extent = axValue(kAXSizeAttribute), AXValueGetValue(extent, .cgSize, &size) {
         frame = CGRect(origin: origin, size: size)
     }
     var children: CFTypeRef?

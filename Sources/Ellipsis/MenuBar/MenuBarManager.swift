@@ -1,6 +1,7 @@
 import AppKit
 import EllipsisCore
 import Observation
+import os
 
 /// Owns the Ellipsis icon and the restriction, and keeps the restriction in
 /// step with the hidden sets.
@@ -16,10 +17,13 @@ final class MenuBarManager {
     private let permission: AccessibilityPermission
     private var floatingBar: FloatingBar?
     /// The app whose item a bar click is opening. While set, and while the
-    /// set is shown, the restriction hides every other app so that item fits.
+    /// set is shown, the restriction lets that item through: alone among
+    /// the hidden apps first, and if it still does not fit, alone of all.
     private var clickThroughTarget: String?
+    private var clickThroughHidesEveryOtherApp = false
     private var clickThrough: Task<Void, Never>?
     private var barPlacement: Task<Void, Never>?
+    private static let log = Logger(subsystem: "au.ronny.Ellipsis", category: "clickThrough")
     private let openSettingsHandler: () -> Void
     private let icon = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private var launchObserver: Task<Void, Never>?
@@ -111,15 +115,24 @@ final class MenuBarManager {
         if !sets.isHiddenSetShown {
             clickThroughTarget = nil
         }
-        let hidden: Set<String>
-        if let target = clickThroughTarget {
-            let running = NSWorkspace.shared.runningApplications.compactMap(\.bundleIdentifier)
-            hidden = Set(running).subtracting([target, Bundle.main.bundleIdentifier ?? ""])
-        } else if inBar {
+        var hidden: Set<String>
+        if inBar {
             // The bar shows the set; the menu bar keeps hiding it.
             hidden = sets.hidden.union(state.isAlwaysHiddenEnabled ? sets.alwaysHidden : [])
         } else {
             hidden = sets.identifiersToHide(isAlwaysHiddenEnabled: state.isAlwaysHiddenEnabled)
+        }
+        if let target = clickThroughTarget {
+            if clickThroughHidesEveryOtherApp {
+                // The apps a picker lists. A list that also names background
+                // processes is ignored by MenuBarAgent as a whole.
+                let running = NSWorkspace.shared.runningApplications
+                    .filter { [.regular, .accessory].contains($0.activationPolicy) }
+                    .compactMap(\.bundleIdentifier)
+                hidden = Set(running).subtracting([target, Bundle.main.bundleIdentifier ?? ""])
+            } else {
+                hidden.remove(target)
+            }
         }
         if hidden.isEmpty {
             restriction.release()
@@ -206,26 +219,45 @@ final class MenuBarManager {
         }
     }
 
-    /// Click-through, spec F8. A restriction that allows only this app and
-    /// Ellipsis makes its item fit, whatever the display. With the
-    /// Accessibility permission the item is then pressed and the normal
-    /// restriction returns once its menu closes. Without it the item stays
-    /// for the user to click, until a rehide or the icon.
+    /// Click-through, spec F8. With the Accessibility permission the item
+    /// is let through on its own; if the layout shows it collapsed, every
+    /// other app hides so it fits. It is then pressed, and the normal
+    /// restriction returns once its menu closes. Without the permission
+    /// nothing can be read, so every other app hides at once, and the item
+    /// stays for the user to click, until a rehide or the icon.
     private func barClicked(_ id: String) {
         clickThrough?.cancel()
         clickThroughTarget = id
+        clickThroughHidesEveryOtherApp = !permission.isTrusted
         applyCurrentState()
         guard permission.isTrusted else { return }
         clickThrough = Task { [weak self] in
-            // MenuBarAgent lays out after the restriction; the divider's delay.
-            try? await Task.sleep(for: .milliseconds(400))
-            guard !Task.isCancelled else { return }
-            let pressed = await Task.detached(priority: .userInitiated) {
-                MenuBarLayout.read()?.displays.lazy
-                    .flatMap(\.items)
-                    .first { $0.bundleIdentifier == id }?
-                    .element?.press() ?? false
-            }.value
+            // MenuBarAgent animates a new layout for about a second, so the
+            // item counts as placed only once its frame holds still between
+            // two reads. Placed and drawn: press it. Placed and collapsed:
+            // hide every other app and go on waiting.
+            var pressed = false
+            var lastFrame: CGRect?
+            let deadline = ContinuousClock.now + .seconds(4)
+            while ContinuousClock.now < deadline {
+                try? await Task.sleep(for: .milliseconds(300))
+                guard !Task.isCancelled, let self else { return }
+                let layout = await Task.detached(priority: .userInitiated) { MenuBarLayout.read() }.value
+                let item = layout?.displays.lazy.flatMap(\.items).first { $0.bundleIdentifier == id }
+                let placed = item != nil && item?.frame == lastFrame
+                lastFrame = item?.frame
+                guard placed, let item else { continue }
+                if let drawn = layout?.drawnItem(of: id), let element = drawn.element {
+                    pressed = await Task.detached(priority: .userInitiated) { element.press() }.value
+                    Self.log.info("pressed \(id, privacy: .public) at \(Int(item.frame.minX)): \(pressed)")
+                    break
+                }
+                guard !self.clickThroughHidesEveryOtherApp else { continue }
+                Self.log.info("\(id, privacy: .public) is collapsed at \(Int(item.frame.minX)); hiding every other app")
+                self.clickThroughHidesEveryOtherApp = true
+                self.applyCurrentState()
+                lastFrame = nil
+            }
             guard !Task.isCancelled, let self else { return }
             if pressed {
                 // Let the menu open, then wait for it to close.

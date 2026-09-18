@@ -30,13 +30,31 @@ struct FloatingBarTests {
 
     /// `open` launches the app on the first call and activates it on the
     /// next, so it repeats until the app is frontmost.
-    private func bringWideFixtureToFront() throws {
-        try guest.waitUntil("the wide fixture is frontmost", interval: 1) {
-            try guest.launch(Fixture.wideName)
+    private func bringWideFixtureToFront(_ name: String = Fixture.wideName) throws {
+        try guest.waitUntil("\(name) is frontmost", interval: 1) {
+            try guest.launch(name)
             Thread.sleep(forTimeInterval: 0.5)
-            return try guest.frontmostApp() == Fixture.wideName
+            return try guest.frontmostApp() == name
         }
         try guest.waitUntilSettled()
+    }
+
+    private var hasAccessibilityGrant: Bool {
+        // The measured clock zone means the app holds the permission.
+        (try? guest.setting("clockZoneWidth")) != "150"
+    }
+
+    /// Clicks A in the bar and returns once its menu is open.
+    private func openAFromTheBar() throws -> CGRect {
+        try showBar()
+        let button = try #require(try guest.barButtons()?.first { $0.name == "FixtureA" })
+        try guest.click(button.frame)
+        var menu: CGRect?
+        try guest.waitUntil("A's menu opens") {
+            menu = try guest.openMenus().first { $0.minY < 42 }
+            return menu != nil
+        }
+        return try #require(menu)
     }
 
     @Test func aShortRegionCollapsesItemsInMenuBarMode() throws {
@@ -106,9 +124,12 @@ struct FloatingBarTests {
     }
 
     /// Without the Accessibility permission a click leaves the app's item
-    /// alone in the menu bar for the user to click.
+    /// alone in the menu bar for the user to click. Runs only in a guest
+    /// where the app has no grant (before scripts/vm-test.sh gave it one);
+    /// the two tests after it need the grant.
     @Test func clickOnAnAppWithoutPermissionShowsThatItemAlone() throws {
         try launchInBarMode()
+        guard !hasAccessibilityGrant else { return }
         try bringWideFixtureToFront()
         try showBar()
         let button = try #require(try guest.barButtons()?.first { $0.name == "FixtureB" })
@@ -128,26 +149,36 @@ struct FloatingBarTests {
     /// restriction returns when the menu closes.
     @Test func clickOnAnAppOpensItsMenu() throws {
         try launchInBarMode()
-        guard try guest.setting("clockZoneWidth") != "150" else {
-            // The measured width means the app holds the permission.
+        guard hasAccessibilityGrant else {
             Issue.record("Ellipsis has no Accessibility grant in this guest; run scripts/vm-test.sh")
             return
         }
         try bringWideFixtureToFront()
         try guest.run("rm -f \(Fixture.markerPath(Fixture.a))")
-        try showBar()
-        let button = try #require(try guest.barButtons()?.first { $0.name == "FixtureA" })
-        try guest.click(button.frame)
-        var menu: CGRect?
-        try guest.waitUntil("A's menu opens") {
-            menu = try guest.openMenus().first { $0.minY < 42 }
-            return menu != nil
-        }
-        let menuFrame = try #require(menu)
+        let menuFrame = try openAFromTheBar()
+        // Room for one more item: the front app's own item stays.
+        #expect(try guest.appItems().contains(Fixture.w))
         try guest.click(CGRect(x: menuFrame.minX, y: menuFrame.minY + 6, width: menuFrame.width, height: 20))  // "Mark"
         try guest.waitUntil("Mark runs") { try !guest.run("ls \(Fixture.markerPath(Fixture.a)) 2>/dev/null || true").isEmpty }
         try guest.waitUntil("the normal restriction returns") {
             try guest.appItems().isDisjoint(with: Fixture.all) && guest.setting("isHiddenSetShown") == "0"
         }
+    }
+
+    /// With no room for one more item, the item is drawn all the same: the
+    /// front app's own item gives way, collapsed by macOS or hidden by the
+    /// fallback restriction.
+    @Test func clickOnAnAppHidesTheOthersOnlyWhenItMust() throws {
+        try launchInBarMode()
+        guard hasAccessibilityGrant else {
+            Issue.record("Ellipsis has no Accessibility grant in this guest; run scripts/vm-test.sh")
+            return
+        }
+        try bringWideFixtureToFront(Fixture.widerName)
+        let menuFrame = try openAFromTheBar()
+        #expect(try guest.isDrawn(Fixture.a))
+        #expect(try !guest.isDrawn(Fixture.v))
+        try guest.click(menuFrame.offsetBy(dx: 0, dy: -menuFrame.height))  // the item above the menu closes it
+        try guest.waitUntil("V's item returns") { try guest.isDrawn(Fixture.v) }
     }
 }

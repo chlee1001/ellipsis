@@ -96,6 +96,53 @@ public struct MenuBarLayout: Sendable, Codable {
         return (left, right)
     }
 
+    /// The item of `bundleIdentifier`, if it is drawn. macOS 27 collapses
+    /// the items that do not fit: they keep a frame, stacked on top of one
+    /// another at the left end of the region, so an item whose frame
+    /// overlaps another's is not on screen.
+    public func drawnItem(of bundleIdentifier: String) -> Item? {
+        for display in displays {
+            guard let item = display.items.first(where: { $0.bundleIdentifier == bundleIdentifier }) else { continue }
+            let overlapped = display.items.contains { other in
+                other.bundleIdentifier != bundleIdentifier
+                    && other.frame.intersection(item.frame).width > 2
+            }
+            return overlapped ? nil : item
+        }
+        return nil
+    }
+
+    /// Reads until two reads in a row agree, since MenuBarAgent moves items
+    /// for a while after a restriction changes. With `previous`, the layout
+    /// must first differ from it: a new restriction takes a moment to land,
+    /// and the old layout would pass as settled. Gives up after `attempts`
+    /// reads and returns the last one. Off the main thread.
+    public nonisolated static func readSettled(
+        after previous: MenuBarLayout? = nil, attempts: Int = 8, interval: Duration = .milliseconds(250)
+    ) async -> MenuBarLayout? {
+        var last: MenuBarLayout?
+        var changed = previous == nil
+        for _ in 0..<attempts {
+            try? await Task.sleep(for: interval)
+            let now = read()
+            if !changed {
+                changed = now.map { previous.map($0.sameFrames(as:)) == false } ?? false
+                if !changed { continue }
+            }
+            if let now, let last, now.sameFrames(as: last) { return now }
+            last = now
+        }
+        return last
+    }
+
+    public func sameFrames(as other: MenuBarLayout) -> Bool {
+        displays.count == other.displays.count && zip(displays, other.displays).allSatisfy { a, b in
+            a.items.count == b.items.count && zip(a.items, b.items).allSatisfy {
+                $0.bundleIdentifier == $1.bundleIdentifier && $0.systemIdentifier == $1.systemIdentifier && $0.frame == $1.frame
+            }
+        }
+    }
+
     /// Nil when MenuBarAgent is not running or refuses, as it does without
     /// the permission. Off the main thread: every read is an IPC.
     public nonisolated static func read() -> MenuBarLayout? {
