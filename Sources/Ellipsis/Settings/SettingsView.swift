@@ -123,6 +123,14 @@ private struct GeneralSettings: View {
                         .foregroundStyle(.red)
                 }
             }
+            Section {
+                Picker("Show hidden items", selection: $state.hiddenItemsPlacement) {
+                    Text("In the menu bar").tag(AppState.HiddenItemsPlacement.menuBar)
+                    Text("In a bar below the menu bar").tag(AppState.HiddenItemsPlacement.floatingBar)
+                }
+            } footer: {
+                Text("A notch, or a long app menu, leaves no room for every item. The bar shows the hidden apps below the menu bar instead, and a click on one opens its menu bar item.")
+            }
             Section("Hide again") {
                 Toggle("After a timeout", isOn: $state.rehideOnTimeout)
                 Stepper(value: $state.rehideTimeout, in: 1...300, step: 1) {

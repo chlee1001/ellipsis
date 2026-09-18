@@ -101,16 +101,17 @@ Exit criteria — met: `mise run vm-test` passes on a clean checkout with the go
 Displays with a notch drop the shown items that do not fit. Spec F8. The bar works on every display, so every step but the spike is built on the desktop and tested in the VM (Phase 7). A virtual display has no notch, but the same drop happens when the status item region ends at the front app's menus: a narrow VM display (`tart set --display`) and a fixture with a wide menu bar reproduce it. `NSScreen.safeAreaInsets` stays zero in the VM, so the placement default takes the insets as a parameter and has a unit test.
 
 1. Spike — done in the VM, host check pending. `docs/phase8.md`. macOS 27 collapses the items that do not fit behind a system `«` button and the Ellipsis icon collapses first. `MenuBarLayout` reports collapsed items with stacked frames. What the host has to answer: whether a notch region behaves like the app-menu region, whether `«` opens with a real mouse, and `NSScreen.safeAreaInsets` on that display.
-2. Add `AppState.hiddenItemsPlacement` (`menuBar` or `floatingBar`) and the "Show hidden items" picker in General. The default comes from `NSScreen.safeAreaInsets.top` at first launch.
-3. Add `FloatingBarPlacement`: a pure function from the icon frame, the screen and the panel size to the panel frame. Unit tests.
-4. Add `FloatingBar`: the `NSPanel`, an `NSHostingView` with an `HStack` of 18-point app icons, tooltips, hover. It takes the bundle identifiers to show and a click handler.
-5. Change `MenuBarManager.applyCurrentState`. In bar mode, `isHiddenSetShown` keeps the restriction and shows the panel. The panel content is `sets.hidden`, plus `sets.alwaysHidden` when `isAlwaysHiddenSetShown`. `RehideMonitor` stays as it is: the panel is non-activating, so it causes no focus change, and its own clicks do not reach the global monitor. `RehidePolicy` must treat a click inside the panel frame as inside.
-6. Click-through. Keep the owner `AXUIElement` in `MenuBarLayout.Item` behind a `Sendable` wrapper. On a click in the bar: apply a restriction that hides every running app except the target and Ellipsis. Wait for the activation and a 400 ms settle (the `IconDivider` delay). Read the layout and `AXPress` the owner element with a 1 s messaging timeout. Close the panel. Poll `MenuBarGeometry.openMenuFrames()` every 300 ms. When no menu is open, `applyCurrentState()`.
-7. Without the Accessibility permission, the click applies the single-app restriction and arms the rehide. The tooltip says what the permission adds.
-8. Docs: README (feature and the app-icon limit), `docs/testing.md` checklist, this file.
-9. VM tests: show with a narrow display drops an item; bar mode shows every app; a click in the bar opens the fixture's menu; each rehide condition closes the bar.
+2. `AppState.hiddenItemsPlacement` — done. `menuBar` or `floatingBar`, the "Show hidden items" picker in General, and a key in the settings file. The default is registered, not written: `registerDefaults(hasNotch:)` picks the bar when a screen has a notch at launch, so a user who never chose follows the display.
+3. `FloatingBarPlacement` — done, with unit tests. Right edge under the icon's right edge, top just below the menu bar, kept on screen; the screen's right edge when the icon has no frame.
+4. `FloatingBar` — done. A non-activating borderless `NSPanel` at the status bar level, on every Space, with an `NSHostingView`: 18-point app icons, tooltips, hover. Only running apps in the set are listed. The bar moves again 400 ms after it opens, since the icon can move once `MenuBarAgent` lays out.
+5. `MenuBarManager` — done. In bar mode a shown set keeps the restriction and opens the bar; an Option show adds the always-hidden set to the bar. `RehidePolicy.shouldHide` takes the panel frame and treats a click in it as inside; `RehideMonitor.panelFrame` supplies it. The clock zone still lifts the restriction while the pointer is in it, which in bar mode shows the items in the menu bar and the bar at once; the measured zone keeps that to the clock.
+6. Click-through — done. `MenuBarLayout.Item.element` keeps the owner `AXUIElement` behind `AccessibilityElement`, `@unchecked Sendable`, not encoded, with `press()`. `barClicked` sets `clickThroughTarget`, and `applyCurrentState` then hides every running app but that one and Ellipsis. With the permission: 400 ms, read the layout, press the item, wait 300 ms, poll `openMenuFrames` every 300 ms until no menu is open, then hide and apply the normal restriction.
+7. Without the permission — done. The click applies the single-app restriction and closes the bar; the set stays shown, so the rehide conditions and the icon end it. The tooltip says what the permission adds.
+8. Docs — done. README, `docs/testing.md` (F1 to F6), spec F8 (collapse, not "not drawn"; the default follows the display), this file.
+9. VM tests — done. `FloatingBarTests`, seven tests: a short region collapses items in menu bar mode (the `«` button appears); bar mode shows every app and nothing collapses, with the bar under the icon; an Option show adds the always-hidden set; each rehide condition closes the bar; a click in the bar is not outside; a click on an app without the permission leaves that item alone in the menu bar; a click with the permission opens the app's menu and the normal restriction returns after it closes. `FixtureW` (`scripts/bundle-fixture.sh W 5`) is the short region. Bugs the tests found on the way: `MenuBarManager` reapplied the restriction only for regular apps that launched (`didLaunchApplicationNotification` again); the clock zone's 300-point default covers the icon on a 1024-point display.
+10. Host check — pending. On the notch: does the notch region collapse the same way, with `«`; does `«` open with a real mouse; is the bar's default right; does a click in the bar open the item.
 
-Exit criteria: on the laptop, a click on the icon shows every hidden app in the bar, a click on an app in the bar opens its menu, and the bar closes on each rehide condition.
+Exit criteria: in the VM — met; on the laptop, a click on the icon shows every hidden app in the bar, a click on an app in the bar opens its menu, and the bar closes on each rehide condition.
 
 ## File layout
 
@@ -154,6 +155,7 @@ Tests/EllipsisVMTests/
   RehideTests.swift
   ClockZoneTests.swift
   DividerTests.swift
+  FloatingBarTests.swift
 Resources/
   Info.plist
   Fixture-Info.plist

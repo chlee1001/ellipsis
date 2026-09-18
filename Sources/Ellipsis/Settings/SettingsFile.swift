@@ -5,7 +5,7 @@ import Foundation
 /// opt-out, and none of AppKit's own keys in the defaults domain.
 enum SettingsFile {
     enum ValueKind {
-        case bool, number, stringArray
+        case bool, number, string, stringArray
     }
 
     static let keys: [String: ValueKind] = [
@@ -16,6 +16,7 @@ enum SettingsFile {
         AppState.Key.rehideTimeout: .number,
         AppState.Key.clockZoneWidth: .number,
         AppState.Key.hidesAppsLeftOfIcon: .bool,
+        AppState.Key.hiddenItemsPlacement: .string,
         HiddenSets.Key.hidden: .stringArray,
         HiddenSets.Key.alwaysHidden: .stringArray,
     ]
@@ -68,6 +69,7 @@ extension SettingsFile.ValueKind {
         switch self {
         case .bool: value is Bool
         case .number: value is NSNumber && !(value is Bool)
+        case .string: value is String
         case .stringArray: value is [String]
         }
     }

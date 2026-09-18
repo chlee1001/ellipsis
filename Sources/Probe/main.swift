@@ -8,7 +8,7 @@ import Foundation
 // the same as the frames in `layout`.
 //
 //   probe layout                       the menu bar items of every display
-//   probe inspect                      every slot's Accessibility tree, for spikes
+//   probe inspect [BUNDLE_ID]          the Accessibility tree of an app's windows, MenuBarAgent by default
 //   probe menus                        the frames of the open menus
 //   probe screens                      the frame and safe area insets of every screen
 //   probe move X Y
@@ -36,36 +36,55 @@ func emit<T: Encodable>(_ value: T) throws {
     FileHandle.standardOutput.write(Data("\n".utf8))
 }
 
-func describe(_ element: AXUIElement, depth: Int) -> [String] {
+/// One node of an app's Accessibility tree, as JSON.
+struct Node: Codable {
+    var owner: String
+    var role: String?
+    var subrole: String?
+    var title: String?
+    var description: String?
+    var value: String?
+    var identifier: String?
+    var frame: CGRect?
+    var actions: [String]
+    var children: [Node]
+}
+
+func node(_ element: AXUIElement, depth: Int) -> Node {
     var pid: pid_t = 0
     AXUIElementGetPid(element, &pid)
-    var names: CFArray?
-    AXUIElementCopyAttributeNames(element, &names)
-    var parts: [String] = []
-    for name in ["AXRole", "AXSubrole", "AXTitle", "AXDescription", "AXValue", "AXIdentifier", "AXHelp", "AXEnabled", "AXPosition", "AXSize"] {
+    func string(_ name: String) -> String? {
         var value: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(element, name as CFString, &value) == .success, let value else { continue }
-        if CFGetTypeID(value) == AXValueGetTypeID() {
-            let axValue = value as! AXValue
-            var point = CGPoint.zero
-            var size = CGSize.zero
-            if AXValueGetValue(axValue, .cgPoint, &point) { parts.append("\(name)=\(Int(point.x)),\(Int(point.y))") }
-            else if AXValueGetValue(axValue, .cgSize, &size) { parts.append("\(name)=\(Int(size.width))x\(Int(size.height))") }
-        } else {
-            parts.append("\(name)=\(value)")
-        }
+        guard AXUIElementCopyAttributeValue(element, name as CFString, &value) == .success, let value else { return nil }
+        return value as? String ?? (value as? NSNumber)?.stringValue
+    }
+    func axValue<T>(_ name: String, _ type: AXValueType, _ zero: T) -> T? {
+        var value: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, name as CFString, &value) == .success, let value,
+              CFGetTypeID(value) == AXValueGetTypeID() else { return nil }
+        var result = zero
+        return AXValueGetValue(value as! AXValue, type, &result) ? result : nil
     }
     var actions: CFArray?
     AXUIElementCopyActionNames(element, &actions)
-    if let actions = actions as? [String], !actions.isEmpty { parts.append("actions=\(actions.joined(separator: ","))") }
-    let bundle = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier ?? "pid \(pid)"
-    var lines = [String(repeating: "  ", count: depth) + "[\(bundle)] " + parts.joined(separator: " ")]
-    var children: CFTypeRef?
-    if AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &children) == .success,
-       let children = children as? [AXUIElement], depth < 4 {
-        for child in children { lines += describe(child, depth: depth + 1) }
+    var frame: CGRect?
+    if let origin = axValue(kAXPositionAttribute, .cgPoint, CGPoint.zero), let size = axValue(kAXSizeAttribute, .cgSize, CGSize.zero) {
+        frame = CGRect(origin: origin, size: size)
     }
-    return lines
+    var children: CFTypeRef?
+    AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &children)
+    return Node(
+        owner: NSRunningApplication(processIdentifier: pid)?.bundleIdentifier ?? "pid \(pid)",
+        role: string(kAXRoleAttribute),
+        subrole: string(kAXSubroleAttribute),
+        title: string(kAXTitleAttribute),
+        description: string(kAXDescriptionAttribute),
+        value: string(kAXValueAttribute),
+        identifier: string(kAXIdentifierAttribute),
+        frame: frame,
+        actions: actions as? [String] ?? [],
+        children: depth < 6 ? (children as? [AXUIElement] ?? []).map { node($0, depth: depth + 1) } : []
+    )
 }
 
 func point(_ args: ArraySlice<String>) throws -> CGPoint {
@@ -110,15 +129,14 @@ do {
         guard let layout = MenuBarLayout.read() else { throw ProbeError(description: "MenuBarAgent did not answer") }
         try emit(layout)
     case "inspect":
-        guard let agent = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.MenuBarAgent").first
-        else { throw ProbeError(description: "no MenuBarAgent") }
-        let app = AXUIElementCreateApplication(agent.processIdentifier)
+        let bundleID = positional.dropFirst().first ?? "com.apple.MenuBarAgent"
+        guard let running = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first
+        else { throw ProbeError(description: "\(bundleID) is not running") }
+        let app = AXUIElementCreateApplication(running.processIdentifier)
         AXUIElementSetMessagingTimeout(app, 1)
         var windows: CFTypeRef?
         AXUIElementCopyAttributeValue(app, kAXWindowsAttribute as CFString, &windows)
-        for window in windows as? [AXUIElement] ?? [] {
-            print(describe(window, depth: 0).joined(separator: "\n"))
-        }
+        try emit((windows as? [AXUIElement] ?? []).map { node($0, depth: 0) })
     case "menus":
         try emit(MenuBarGeometry.openMenuFrames().map(flipped))
     case "screens":
