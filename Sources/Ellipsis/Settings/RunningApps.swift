@@ -25,20 +25,15 @@ final class RunningApps {
     /// nil without the Accessibility permission.
     private(set) var withMenuBarItem: Set<String>?
     private let permission: AccessibilityPermission
-    private var observers: [Task<Void, Never>] = []
+    private var observer: Task<Void, Never>?
     private var scan: Task<Void, Never>?
 
     init(permission: AccessibilityPermission) {
         self.permission = permission
         refresh()
-        let center = NSWorkspace.shared.notificationCenter
-        let names = [NSWorkspace.didLaunchApplicationNotification, NSWorkspace.didTerminateApplicationNotification]
-        observers = names.map { name in
-            let changes = center.notifications(named: name)
-            return Task { [weak self] in
-                for await _ in changes.map({ _ in () }) {
-                    self?.refresh()
-                }
+        observer = Task { [weak self] in
+            for await _ in NSWorkspace.runningApplicationChanges() {
+                self?.refresh()
             }
         }
     }
