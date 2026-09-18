@@ -226,6 +226,7 @@ final class MenuBarManager {
     /// nothing can be read, so every other app hides at once, and the item
     /// stays for the user to click, until a rehide or the icon.
     private func barClicked(_ id: String) {
+        Self.log.info("bar click on \(id, privacy: .public); trusted: \(self.permission.isTrusted)")
         clickThrough?.cancel()
         clickThroughTarget = id
         clickThroughHidesEveryOtherApp = !permission.isTrusted
