@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 @testable import Ellipsis
+import EllipsisCore
 
 struct RehidePolicyTests {
     // One 1000x800 screen with a 24-point menu bar.

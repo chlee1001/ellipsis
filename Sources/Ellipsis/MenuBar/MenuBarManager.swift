@@ -1,4 +1,5 @@
 import AppKit
+import EllipsisCore
 import Observation
 
 /// Owns the Ellipsis icon and the restriction, and keeps the restriction in

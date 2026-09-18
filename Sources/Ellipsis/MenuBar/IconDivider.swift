@@ -1,4 +1,5 @@
 import AppKit
+import EllipsisCore
 import Observation
 
 /// The Ellipsis icon as the divider, like the Ice and Bartender icons:

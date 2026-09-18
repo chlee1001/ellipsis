@@ -1,15 +1,15 @@
 import AppKit
 
 /// The menu bar rectangle of every screen, in Cocoa screen coordinates.
-struct MenuBarGeometry: Sendable {
-    var frames: [NSRect]
+public struct MenuBarGeometry: Sendable {
+    public var frames: [NSRect]
 
-    init(frames: [NSRect]) {
+    public init(frames: [NSRect]) {
         self.frames = frames
     }
 
     /// The menu bar is the strip between `visibleFrame.maxY` and `frame.maxY`.
-    init(screens: [NSScreen]) {
+    public init(screens: [NSScreen]) {
         frames = screens.map { screen in
             let frame = screen.frame
             let bottom = screen.visibleFrame.maxY
@@ -18,19 +18,19 @@ struct MenuBarGeometry: Sendable {
     }
 
     @MainActor
-    static var current: MenuBarGeometry { MenuBarGeometry(screens: NSScreen.screens) }
+    public static var current: MenuBarGeometry { MenuBarGeometry(screens: NSScreen.screens) }
 
-    func contains(_ point: NSPoint) -> Bool {
+    public func contains(_ point: NSPoint) -> Bool {
         frames.contains { $0.contains(point) }
     }
 
     /// The menu bar under `point`, if any.
-    func frame(containing point: NSPoint) -> NSRect? {
+    public func frame(containing point: NSPoint) -> NSRect? {
         frames.first { $0.contains(point) }
     }
 
     /// The trailing `width` points of any menu bar, where the clock lives.
-    func clockZoneContains(_ point: NSPoint, width: CGFloat) -> Bool {
+    public func clockZoneContains(_ point: NSPoint, width: CGFloat) -> Bool {
         frames.contains { bar in
             NSRect(x: bar.maxX - width, y: bar.minY, width: width, height: bar.height).contains(point)
         }
@@ -40,7 +40,7 @@ struct MenuBarGeometry: Sendable {
     /// windows at the pop-up menu level. The window list reads with no
     /// permission; only window names need Screen Recording.
     @MainActor
-    static func openMenuFrames() -> [NSRect] {
+    public static func openMenuFrames() -> [NSRect] {
         let options: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
         guard let list = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] else {
             return []
