@@ -27,6 +27,12 @@ final class RehideMonitor {
         isArmed = true
         install()
     }
+    /// Reinstalls the conditions, so the timeout starts over. Called when a
+    /// pin leaves a new item to click: the user keeps the whole timeout.
+    func rearm() {
+        guard isArmed else { return }
+        install()
+    }
 
     func disarm() {
         guard isArmed else { return }

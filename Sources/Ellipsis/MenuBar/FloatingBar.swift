@@ -40,10 +40,11 @@ final class FloatingBar {
     var frame: NSRect? { panel.isVisible ? panel.frame : nil }
 
     /// Shows `apps` under `iconFrame` (Cocoa coordinates), or at the right
-    /// edge of `screen` when the icon has no frame. `hint` is added to every
+    /// edge of `screen` when the icon has no frame. `pinned` marks the apps
+    /// already pinned, so a click on them unpins. `hint` is added to every
     /// tooltip, for the state without the Accessibility permission.
-    func show(apps: [App], hint: String?, iconFrame: NSRect?, screen: NSScreen) {
-        let view = NSHostingView(rootView: BarView(apps: apps, hint: hint, onClick: onClick))
+    func show(apps: [App], pinned: Set<String> = [], hint: String?, iconFrame: NSRect?, screen: NSScreen) {
+        let view = NSHostingView(rootView: BarView(apps: apps, pinned: pinned, hint: hint, onClick: onClick))
         view.sizingOptions = [.intrinsicContentSize]
         panel.contentView = view
         place(iconFrame: iconFrame, screen: screen)
@@ -79,6 +80,7 @@ final class FloatingBar {
 
 private struct BarView: View {
     let apps: [FloatingBar.App]
+    let pinned: Set<String>
     let hint: String?
     let onClick: (String) -> Void
 
@@ -92,7 +94,7 @@ private struct BarView: View {
                     .padding(.vertical, 6)
             }
             ForEach(apps) { app in
-                AppButton(app: app, hint: hint, onClick: onClick)
+                AppButton(app: app, isPinned: pinned.contains(app.id), hint: hint, onClick: onClick)
             }
         }
         .padding(4)
@@ -104,6 +106,7 @@ private struct BarView: View {
 
 private struct AppButton: View {
     let app: FloatingBar.App
+    let isPinned: Bool
     let hint: String?
     let onClick: (String) -> Void
     @State private var isHovered = false
@@ -122,8 +125,20 @@ private struct AppButton: View {
             RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .fill(isHovered ? Color.primary.opacity(0.12) : .clear)
         )
+        .overlay {
+            if isPinned {
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .strokeBorder(Color.accentColor, lineWidth: 1.5)
+            }
+        }
         .onHover { isHovered = $0 }
-        .help(hint.map { "\(app.name) — \($0)" } ?? app.name)
+        .help(helpText)
         .accessibilityLabel(app.name)
+        .accessibilityValue(isPinned ? "pinned" : "")
+    }
+
+    private var helpText: String {
+        let pin = isPinned ? "pinned — click to unpin" : "click to pin"
+        return hint.map { "\(app.name) — \(pin); \($0)" } ?? "\(app.name) — \(pin)"
     }
 }
