@@ -47,6 +47,8 @@ Numbers match the acceptance criteria in `docs/spec.md`. A row marked `vm` has a
 | F5 | Bar mode, no Accessibility. Click an app in the bar. | The app is pinned: its item appears alone in the menu bar, every other app hides at once, and the bar closes. The icon brings the bar back, then hides everything. | vm |
 | F6 | Bar mode, with Accessibility. Click an app in the bar. | The app is pinned: its item appears in the menu bar, the bar closes, and its menu opens from a click on the item. Picking an item runs it; the set hides from the icon. | vm |
 | F6a | Same, with a front app whose menus leave room for one item only. | A second pin that does not fit hides every other app; both pins are drawn. After the set hides, the front app's item returns. | vm |
+| F6b | Three pins, with a menu bar item that animates (a timer, a meter). Leave the pointer alone. | The pins stay. No rehide condition and no fit-check escalation takes them away. | Pass |
+| F6c | Pin an app that runs from outside `/Applications` (Synology Drive). | The bar marks it and says why. The other items stay: no escalation for an item macOS will not draw. | Pass |
 | F7 | On the notch MacBook, first launch. | "Show hidden items" defaults to the bar. Settings › General switches it. | Pass |
 | 10 | Release build: `spctl --assess`, `stapler validate`. | Both pass. | Phase 5 |
 | 11 | Clean checkout: `swift build`, every script. | No Xcode project needed. | Phase 5 |

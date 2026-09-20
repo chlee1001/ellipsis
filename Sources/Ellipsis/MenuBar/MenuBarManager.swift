@@ -71,6 +71,7 @@ final class MenuBarManager {
         self.openSettingsHandler = openSettings
         self.rehide = RehideMonitor(state: state, sets: sets)
         rehide.panelFrame = { [weak self] in self?.floatingBar?.frame }
+        rehide.hasPins = { [weak self] in self?.pins.isEmpty == false }
 
         icon.autosaveName = "ellipsis.icon"
         if let button = icon.button {
@@ -222,6 +223,7 @@ final class MenuBarManager {
         floatingBar?.show(
             apps: FloatingBar.apps(for: shown),
             pinned: Set(pins),
+            unreachable: MenuBarRestriction.unreachableRunningApps(),
             hint: permission.isTrusted ? nil : "the other items give way while it is pinned",
             iconFrame: iconFrame,
             screen: screen
@@ -246,7 +248,7 @@ final class MenuBarManager {
     /// one arrangement that always leaves the pinned item on screen. With
     /// the permission, the pins are checked against the layout once it
     /// settles, and every other app hides only if a pinned item does not
-    /// fit. A rehide or the icon ends the pins with the set.
+    /// fit. No rehide condition takes a pin away; the icon ends it.
     private func barClicked(_ id: String) {
         Self.log.info("bar click on \(id, privacy: .public); trusted: \(self.permission.isTrusted)")
         pins = PinPolicy.toggling(id, in: pins)
@@ -256,8 +258,8 @@ final class MenuBarManager {
             pinsNeedRoom = true
         }
         isBarOpen = false
-        // A pin leaves something new to click; the user keeps the whole
-        // timeout for it.
+        // While a pin is up no rehide condition fires; the timeout starts
+        // over once the last pin is gone.
         rehide.rearm()
         applyCurrentState()
         checkPinsFit()
@@ -266,32 +268,50 @@ final class MenuBarManager {
     /// Whether every pinned item is on screen. Nothing can be read without
     /// the Accessibility permission, so the check only runs with it. Reads
     /// happen off the main thread; every read is an IPC.
+    ///
+    /// The verdict watches the pins alone, not the whole layout. One menu
+    /// bar item that animates — a timer, a meter, a running cat — moves on
+    /// every read, so a whole-layout settle never arrives and the check
+    /// would either never run or run on an animation frame, where items
+    /// overlap mid-flight and every pin reads as collapsed.
     private func checkPinsFit() {
         pinFit?.cancel()
         guard permission.isTrusted, !pins.isEmpty, sets.isHiddenSetShown else { return }
         pinFit = Task { [weak self] in
-            // A snapshot of the layout before the new restriction lands. A
-            // restriction takes a moment to land, and reads taken before
-            // that agree with each other, so without this the check can
-            // pass the old layout as settled, miss the newest pin in it
-            // and escalate for nothing.
-            let previous = await Task.detached(priority: .userInitiated) { MenuBarLayout.read() }.value
             // MenuBarAgent lays out only after the newest assertion reports
             // back, and animates for about a second after that.
             await self?.restriction.waitUntilActivated()
-            let layout = await MenuBarLayout.readSettled(after: previous)
-            guard !Task.isCancelled, let self, !self.pins.isEmpty, self.sets.isHiddenSetShown else { return }
-            // `drawnItem`, not membership in the layout table: a collapsed
-            // item keeps a frame, stacked at the left end of the region.
-            let fits = self.pins.allSatisfy { layout?.drawnItem(of: $0) != nil }
-            if !fits, !self.pinsNeedRoom {
-                Self.log.info("a pinned item is collapsed; hiding every other app")
-                self.pinsNeedRoom = true
-                self.applyCurrentState()
-            } else if fits, self.pinsNeedRoom, permission.isTrusted {
-                self.pinsNeedRoom = false
-                self.applyCurrentState()
+            var previousVerdict: Set<String>?
+            for _ in 0..<16 {
+                try? await Task.sleep(for: .milliseconds(250))
+                guard !Task.isCancelled, let self, !self.pins.isEmpty, self.sets.isHiddenSetShown else { return }
+                // An app the allow-list cannot reach stays hidden whatever
+                // the restriction says, so hiding every other app for it
+                // would empty the menu bar and still not draw it.
+                let unreachable = MenuBarRestriction.unreachableRunningApps()
+                let pins = self.pins.filter { !unreachable.contains($0) }
+                guard !pins.isEmpty else { return }
+                let layout = await Task.detached(priority: .userInitiated) { MenuBarLayout.read() }.value
+                guard let layout else { continue }
+                // `drawnItem`, not membership in the layout table: a
+                // collapsed item keeps a frame, stacked at the left end.
+                let drawn = Set(pins.filter { layout.drawnItem(of: $0) != nil })
+                defer { previousVerdict = drawn }
+                // Two reads in a row that agree: the pins have stopped moving.
+                guard previousVerdict == drawn else { continue }
+                let fits = drawn.count == pins.count
+                if !fits, !self.pinsNeedRoom {
+                    Self.log.info("a pinned item is collapsed; hiding every other app")
+                    self.pinsNeedRoom = true
+                    self.applyCurrentState()
+                } else if fits, self.pinsNeedRoom {
+                    Self.log.info("the pins fit again; letting the other apps back")
+                    self.pinsNeedRoom = false
+                    self.applyCurrentState()
+                }
+                return
             }
+            Self.log.info("the pins never held still; leaving them as they are")
         }
     }
 

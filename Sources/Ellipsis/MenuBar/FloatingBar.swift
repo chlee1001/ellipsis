@@ -41,10 +41,17 @@ final class FloatingBar {
 
     /// Shows `apps` under `iconFrame` (Cocoa coordinates), or at the right
     /// edge of `screen` when the icon has no frame. `pinned` marks the apps
-    /// already pinned, so a click on them unpins. `hint` is added to every
-    /// tooltip, for the state without the Accessibility permission.
-    func show(apps: [App], pinned: Set<String> = [], hint: String?, iconFrame: NSRect?, screen: NSScreen) {
-        let view = NSHostingView(rootView: BarView(apps: apps, pinned: pinned, hint: hint, onClick: onClick))
+    /// already pinned, so a click on them unpins. `unreachable` marks the
+    /// apps macOS keeps hidden whatever the allow-list says, so a pin
+    /// cannot draw them. `hint` is added to every tooltip, for the state
+    /// without the Accessibility permission.
+    func show(
+        apps: [App], pinned: Set<String> = [], unreachable: Set<String> = [],
+        hint: String?, iconFrame: NSRect?, screen: NSScreen
+    ) {
+        let view = NSHostingView(
+            rootView: BarView(apps: apps, pinned: pinned, unreachable: unreachable, hint: hint, onClick: onClick)
+        )
         view.sizingOptions = [.intrinsicContentSize]
         panel.contentView = view
         place(iconFrame: iconFrame, screen: screen)
@@ -81,6 +88,7 @@ final class FloatingBar {
 private struct BarView: View {
     let apps: [FloatingBar.App]
     let pinned: Set<String>
+    let unreachable: Set<String>
     let hint: String?
     let onClick: (String) -> Void
 
@@ -94,7 +102,13 @@ private struct BarView: View {
                     .padding(.vertical, 6)
             }
             ForEach(apps) { app in
-                AppButton(app: app, isPinned: pinned.contains(app.id), hint: hint, onClick: onClick)
+                AppButton(
+                    app: app,
+                    isPinned: pinned.contains(app.id),
+                    isUnreachable: unreachable.contains(app.id),
+                    hint: hint,
+                    onClick: onClick
+                )
             }
         }
         .padding(4)
@@ -107,6 +121,7 @@ private struct BarView: View {
 private struct AppButton: View {
     let app: FloatingBar.App
     let isPinned: Bool
+    let isUnreachable: Bool
     let hint: String?
     let onClick: (String) -> Void
     @State private var isHovered = false
@@ -118,6 +133,7 @@ private struct AppButton: View {
             Image(nsImage: app.icon)
                 .resizable()
                 .frame(width: 18, height: 18)
+                .opacity(isUnreachable ? 0.4 : 1)
                 .padding(6)
         }
         .buttonStyle(.plain)
@@ -138,6 +154,9 @@ private struct AppButton: View {
     }
 
     private var helpText: String {
+        if isUnreachable {
+            return "\(app.name) — runs outside /Applications, so macOS hides it whenever Ellipsis hides anything"
+        }
         let pin = isPinned ? "pinned — click to unpin" : "click to pin"
         return hint.map { "\(app.name) — \(pin); \($0)" } ?? "\(app.name) — \(pin)"
     }
