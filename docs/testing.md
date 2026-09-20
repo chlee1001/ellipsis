@@ -44,9 +44,9 @@ Numbers match the acceptance criteria in `docs/spec.md`. A row marked `vm` has a
 | F2 | Same, "In a bar below the menu bar" mode. Click the icon. | A bar under the icon lists the hidden apps. Nothing in the menu bar moves. Icon shows `‹`. | vm |
 | F3 | Option-click the icon in bar mode. | The bar adds the always-hidden apps. | vm |
 | F4 | Bar mode. Each rehide condition. | The bar closes. A click in the bar does not close it. | vm |
-| F5 | Bar mode, no Accessibility. Click an app in the bar. | That app's item appears alone in the menu bar; the bar closes. The icon hides it again. | vm |
-| F6 | Bar mode, with Accessibility. Click an app in the bar. | Its menu opens; the other visible items stay. Picking an item runs it; the set hides after the menu closes. | vm |
-| F6a | Same, with a front app whose menus leave room for one item only. | The other apps hide while the menu is open and return after. | vm |
+| F5 | Bar mode, no Accessibility. Click an app in the bar. | The app is pinned: its item appears alone in the menu bar, every other app hides at once, and the bar closes. The icon brings the bar back, then hides everything. | vm |
+| F6 | Bar mode, with Accessibility. Click an app in the bar. | The app is pinned: its item appears in the menu bar, the bar closes, and its menu opens from a click on the item. Picking an item runs it; the set hides from the icon. | vm |
+| F6a | Same, with a front app whose menus leave room for one item only. | A second pin that does not fit hides every other app; both pins are drawn. After the set hides, the front app's item returns. | vm |
 | F7 | On the notch MacBook, first launch. | "Show hidden items" defaults to the bar. Settings › General switches it. | Pass |
 | 10 | Release build: `spctl --assess`, `stapler validate`. | Both pass. | Phase 5 |
 | 11 | Clean checkout: `swift build`, every script. | No Xcode project needed. | Phase 5 |

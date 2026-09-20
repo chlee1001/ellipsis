@@ -24,7 +24,7 @@ Ellipsis checks GitHub Releases for updates with [Sparkle](https://sparkle-proje
 - Private API. Ellipsis loads `MenuBarClientCore.framework` and uses its `MBAssessmentMode` classes. A macOS update can rename or remove them. Ellipsis checks for the classes at launch and shows an alert if they are missing.
 - Focus and the camera/microphone indicator are hidden while any set is hidden. No setting brings them back. This is a limit of the API.
 - The hidden sets hold whole apps, not single items. An app with two menu bar items hides both.
-- The bar below the menu bar shows app icons, not the items. An item that changes (a timer, a meter) shows only its app icon there. Opening an item from the bar with one click needs the Accessibility permission; without it, a click puts that app's item alone in the menu bar for you to click.
+- The bar below the menu bar shows app icons, not the items. An item that changes (a timer, a meter) shows only its app icon there. A click on an app in the bar pins its item in the menu bar for you to click, up to three at once; without the Accessibility permission the other items give way while a pin is up.
 - The app pickers in Settings list every running app, not only apps with a menu bar item. With the Accessibility permission, they list only apps with a menu bar item, the icon can work as a divider (Cmd-drag items to its left to hide them), and the clock zone fits the clock. The permission is optional. Ellipsis asks once at first launch, and again only from Settings.
 
 ## Alternatives

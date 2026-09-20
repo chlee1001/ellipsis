@@ -16,14 +16,19 @@ final class MenuBarManager {
     private let updater: Updater
     private let permission: AccessibilityPermission
     private var floatingBar: FloatingBar?
-    /// The app whose item a bar click is opening. While set, and while the
-    /// set is shown, the restriction lets that item through: alone among
-    /// the hidden apps first, and if it still does not fit, alone of all.
-    private var clickThroughTarget: String?
-    private var clickThroughHidesEveryOtherApp = false
-    private var clickThrough: Task<Void, Never>?
+    /// The apps a bar click pinned, oldest first. While the set is shown,
+    /// the restriction lets their items through, so the user clicks them in
+    /// the menu bar as they would any other item. At most `PinPolicy.limit`.
+    private var pins: [String] = []
+    /// Set once the pinned items turn out not to fit: every other app then
+    /// hides so they do.
+    private var pinsNeedRoom = false
+    private var pinFit: Task<Void, Never>?
+    /// Whether the floating bar is on screen. A pin closes it and leaves
+    /// the item in the menu bar; the icon brings it back for another pin.
+    private var isBarOpen = false
     private var barPlacement: Task<Void, Never>?
-    private static let log = Logger(subsystem: "au.ronny.Ellipsis", category: "clickThrough")
+    private static let log = Logger(subsystem: "au.ronny.Ellipsis", category: "pins")
     private let openSettingsHandler: () -> Void
     private let icon = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private var launchObserver: Task<Void, Never>?
@@ -92,17 +97,26 @@ final class MenuBarManager {
 
     // MARK: Show and hide
 
-    /// A normal click toggles the hidden set. An Option click toggles both sets.
+    /// A normal click toggles the hidden set. An Option click toggles both
+    /// sets. In bar mode a pin closes the bar and leaves the item in the
+    /// menu bar, so the icon brings the bar back for another pin, and hides
+    /// everything only once the bar is open again.
     func toggle(includingAlwaysHidden: Bool) {
         let isShown = includingAlwaysHidden ? sets.isAlwaysHiddenSetShown : sets.isHiddenSetShown
         if isShown {
-            hide()
+            if !pins.isEmpty, !isBarOpen, state.hiddenItemsPlacement == .floatingBar {
+                isBarOpen = true
+                applyCurrentState()
+            } else {
+                hide()
+            }
         } else {
             show(includingAlwaysHidden: includingAlwaysHidden)
         }
     }
 
     func show(includingAlwaysHidden: Bool) {
+        isBarOpen = true
         sets.show(includingAlwaysHidden: includingAlwaysHidden)
     }
 
@@ -112,8 +126,10 @@ final class MenuBarManager {
 
     func applyCurrentState() {
         let inBar = state.hiddenItemsPlacement == .floatingBar
-        if !sets.isHiddenSetShown {
-            clickThroughTarget = nil
+        if !sets.isHiddenSetShown || !inBar {
+            pins = []
+            pinsNeedRoom = false
+            isBarOpen = false
         }
         var hidden: Set<String>
         if inBar {
@@ -122,16 +138,16 @@ final class MenuBarManager {
         } else {
             hidden = sets.identifiersToHide(isAlwaysHiddenEnabled: state.isAlwaysHiddenEnabled)
         }
-        if let target = clickThroughTarget {
-            if clickThroughHidesEveryOtherApp {
+        if !pins.isEmpty {
+            if pinsNeedRoom {
                 // The apps a picker lists. A list that also names background
                 // processes is ignored by MenuBarAgent as a whole.
                 let running = NSWorkspace.shared.runningApplications
                     .filter { [.regular, .accessory].contains($0.activationPolicy) }
                     .compactMap(\.bundleIdentifier)
-                hidden = Set(running).subtracting([target, Bundle.main.bundleIdentifier ?? ""])
+                hidden = Set(running).subtracting(pins + [Bundle.main.bundleIdentifier ?? ""])
             } else {
-                hidden.remove(target)
+                hidden.subtract(pins)
             }
         }
         if hidden.isEmpty {
@@ -155,7 +171,7 @@ final class MenuBarManager {
 
     func release() {
         rehide.disarm()
-        clickThrough?.cancel()
+        pinFit?.cancel()
         barPlacement?.cancel()
         floatingBar?.hide()
         launchObserver?.cancel()
@@ -189,7 +205,7 @@ final class MenuBarManager {
     // MARK: The floating bar
 
     private func updateFloatingBar(inBar: Bool) {
-        guard inBar, sets.isHiddenSetShown, clickThroughTarget == nil else {
+        guard inBar, sets.isHiddenSetShown, isBarOpen else {
             floatingBar?.hide()
             return
         }
@@ -205,7 +221,8 @@ final class MenuBarManager {
         let screen = icon.button?.window?.screen ?? NSScreen.main ?? NSScreen.screens[0]
         floatingBar?.show(
             apps: FloatingBar.apps(for: shown),
-            hint: permission.isTrusted ? nil : "with the Accessibility permission, one click opens its menu bar item",
+            pinned: Set(pins),
+            hint: permission.isTrusted ? nil : "the other items give way while it is pinned",
             iconFrame: iconFrame,
             screen: screen
         )
@@ -219,59 +236,62 @@ final class MenuBarManager {
         }
     }
 
-    /// Click-through, spec F8. With the Accessibility permission the item
-    /// is let through on its own; if the layout shows it collapsed, every
-    /// other app hides so it fits. It is then pressed, and the normal
-    /// restriction returns once its menu closes. Without the permission
-    /// nothing can be read, so every other app hides at once, and the item
-    /// stays for the user to click, until a rehide or the icon.
+    /// A click in the bar pins the app, spec F8. The restriction lets its
+    /// item through and the bar closes, so the user clicks the item itself
+    /// in the menu bar, as they would any other item. Nothing is pressed on
+    /// the user's behalf: the press raced the layout and lost the item its
+    /// menu. A click on a pinned app unpins it. Up to `PinPolicy.limit`
+    /// items are pinned at once. Without the Accessibility permission
+    /// nothing can be read, so every other app hides at once, which is the
+    /// one arrangement that always leaves the pinned item on screen. With
+    /// the permission, the pins are checked against the layout once it
+    /// settles, and every other app hides only if a pinned item does not
+    /// fit. A rehide or the icon ends the pins with the set.
     private func barClicked(_ id: String) {
         Self.log.info("bar click on \(id, privacy: .public); trusted: \(self.permission.isTrusted)")
-        clickThrough?.cancel()
-        clickThroughTarget = id
-        clickThroughHidesEveryOtherApp = !permission.isTrusted
+        pins = PinPolicy.toggling(id, in: pins)
+        if pins.isEmpty {
+            pinsNeedRoom = false
+        } else if !permission.isTrusted {
+            pinsNeedRoom = true
+        }
+        isBarOpen = false
+        // A pin leaves something new to click; the user keeps the whole
+        // timeout for it.
+        rehide.rearm()
         applyCurrentState()
-        guard permission.isTrusted else { return }
-        clickThrough = Task { [weak self] in
-            // The item is pressed the moment it is drawn: the element is the
-            // app's button, wherever the animation has it. MenuBarAgent
-            // animates a new layout for about a second, and mid-way the
-            // item can overlap a neighbour, so it counts as collapsed only
-            // once its frame holds still between two reads. Collapsed: hide
-            // every other app and go on waiting.
-            var pressed = false
-            var lastFrame: CGRect?
-            let deadline = ContinuousClock.now + .seconds(4)
-            while ContinuousClock.now < deadline {
-                try? await Task.sleep(for: .milliseconds(150))
-                guard !Task.isCancelled, let self else { return }
-                let layout = await Task.detached(priority: .userInitiated) { MenuBarLayout.read() }.value
-                if let drawn = layout?.drawnItem(of: id), let element = drawn.element {
-                    pressed = await Task.detached(priority: .userInitiated) { element.press() }.value
-                    Self.log.info("pressed \(id, privacy: .public) at \(Int(drawn.frame.minX)): \(pressed)")
-                    break
-                }
-                let item = layout?.displays.lazy.flatMap(\.items).first { $0.bundleIdentifier == id }
-                let collapsed = item != nil && item?.frame == lastFrame
-                lastFrame = item?.frame
-                guard collapsed, let item, !self.clickThroughHidesEveryOtherApp else { continue }
-                Self.log.info("\(id, privacy: .public) is collapsed at \(Int(item.frame.minX)); hiding every other app")
-                self.clickThroughHidesEveryOtherApp = true
+        checkPinsFit()
+    }
+
+    /// Whether every pinned item is on screen. Nothing can be read without
+    /// the Accessibility permission, so the check only runs with it. Reads
+    /// happen off the main thread; every read is an IPC.
+    private func checkPinsFit() {
+        pinFit?.cancel()
+        guard permission.isTrusted, !pins.isEmpty, sets.isHiddenSetShown else { return }
+        pinFit = Task { [weak self] in
+            // A snapshot of the layout before the new restriction lands. A
+            // restriction takes a moment to land, and reads taken before
+            // that agree with each other, so without this the check can
+            // pass the old layout as settled, miss the newest pin in it
+            // and escalate for nothing.
+            let previous = await Task.detached(priority: .userInitiated) { MenuBarLayout.read() }.value
+            // MenuBarAgent lays out only after the newest assertion reports
+            // back, and animates for about a second after that.
+            await self?.restriction.waitUntilActivated()
+            let layout = await MenuBarLayout.readSettled(after: previous)
+            guard !Task.isCancelled, let self, !self.pins.isEmpty, self.sets.isHiddenSetShown else { return }
+            // `drawnItem`, not membership in the layout table: a collapsed
+            // item keeps a frame, stacked at the left end of the region.
+            let fits = self.pins.allSatisfy { layout?.drawnItem(of: $0) != nil }
+            if !fits, !self.pinsNeedRoom {
+                Self.log.info("a pinned item is collapsed; hiding every other app")
+                self.pinsNeedRoom = true
                 self.applyCurrentState()
-                lastFrame = nil
+            } else if fits, self.pinsNeedRoom, permission.isTrusted {
+                self.pinsNeedRoom = false
+                self.applyCurrentState()
             }
-            guard !Task.isCancelled, let self else { return }
-            if pressed {
-                // Let the menu open, then wait for it to close.
-                try? await Task.sleep(for: .milliseconds(300))
-                while !Task.isCancelled, RehidePolicy.isMenuOpen(MenuBarGeometry.openMenuFrames(), menuBar: .current) {
-                    try? await Task.sleep(for: .milliseconds(300))
-                }
-                guard !Task.isCancelled else { return }
-            }
-            self.clickThroughTarget = nil
-            self.hide()
-            self.applyCurrentState()
         }
     }
 
