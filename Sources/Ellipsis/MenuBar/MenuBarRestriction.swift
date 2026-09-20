@@ -56,6 +56,27 @@ final class MenuBarRestriction {
         self.assertionClass = assertionClass
     }
 
+    /// Whether the allow-list can reach this app at all. `MenuBarAgent`
+    /// matches it only against apps in `/Applications`, so an app that runs
+    /// from anywhere else stays hidden while any restriction is active,
+    /// whatever the allow-list says. See `docs/spec.md`, "How it hides".
+    /// Letting such an app through, or hiding every other app to make room
+    /// for it, buys the user nothing.
+    static func isReachableByAllowList(_ bundleURL: URL?) -> Bool {
+        guard let bundleURL else { return false }
+        return bundleURL.resolvingSymlinksInPath().path.hasPrefix("/Applications/")
+    }
+
+    /// The running apps the allow-list cannot reach, by bundle identifier.
+    static func unreachableRunningApps() -> Set<String> {
+        var result = Set<String>()
+        for app in NSWorkspace.shared.runningApplications {
+            guard let id = app.bundleIdentifier, !isReachableByAllowList(app.bundleURL) else { continue }
+            result.insert(id)
+        }
+        return result
+    }
+
     /// Hides the given apps and shows every other running app and every system
     /// item. Replaces any assertion held before. The allow-list is a snapshot of
     /// the running apps, so call this again when an app launches.
