@@ -29,7 +29,7 @@ final class MenuBarManager {
     /// the item in the menu bar; the icon brings it back for another pin.
     private var isBarOpen = false
     private var barPlacement: Task<Void, Never>?
-    private static let log = Logger(subsystem: "au.ronny.Ellipsis", category: "pins")
+    private static let log = Logger(subsystem: "com.chlee1001.Ellipsis", category: "pins")
     private let openSettingsHandler: () -> Void
     private let icon = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private var launchObserver: Task<Void, Never>?

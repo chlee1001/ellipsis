@@ -1,6 +1,7 @@
 # Ellipsis
 
 Modified by Chaehyeon Lee (2026): floating-bar pins and pin fit handling.
+The fork has its own bundle identity and Sparkle update channel.
 Original project: [ronny/ellipsis](https://github.com/ronny/ellipsis).
 
 Ellipsis hides selected menu bar items on macOS 27. Click its icon to show them. Click again, or wait, to hide them again.
@@ -20,7 +21,7 @@ Ellipsis hides selected menu bar items on macOS 27. Click its icon to show them.
 
 On a MacBook with a notch, a shown set may not fit in the menu bar. macOS then collapses the items that do not fit behind a `«` button, the Ellipsis icon first. So on a notch display, Ellipsis shows the hidden apps in a bar below the menu bar instead, one app icon per app, and the menu bar stays as it is. A click on an app in the bar opens its menu bar item. Settings › General › "Show hidden items" switches between the bar and the menu bar on any display.
 
-Ellipsis checks GitHub Releases for updates with [Sparkle](https://sparkle-project.org). At the second launch, it asks whether it can check on its own. "Check for Updates…" in the icon menu checks now.
+This fork checks its own GitHub Releases for updates with [Sparkle](https://sparkle-project.org). At the second launch, it asks whether it can check on its own. "Check for Updates…" in the icon menu checks now. The original app uses a different signing and update key; it cannot update itself into this fork. Install this fork manually once and reconfigure its separate settings.
 
 ## Limits
 
