@@ -1,3 +1,4 @@
+// Modified by Chaehyeon Lee (2026): keep pinned items visible during rehide checks.
 import AppKit
 import EllipsisCore
 
@@ -12,6 +13,9 @@ final class RehideMonitor {
     private(set) var isArmed = false
     /// The floating bar's frame while it is visible. A click in it is not outside.
     var panelFrame: () -> NSRect? = { nil }
+    /// Whether a pin is up. A pin is an item the user put in the menu bar
+    /// to click, so no rehide condition takes it away; the icon ends it.
+    var hasPins: () -> Bool = { false }
     private var timer: Task<Void, Never>?
     private var clickMonitor: Any?
     private var focusObservers: [NSObjectProtocol] = []
@@ -25,6 +29,14 @@ final class RehideMonitor {
 
     func arm() {
         isArmed = true
+        install()
+    }
+
+    /// Reinstalls the conditions, so the timeout starts over. Called when a
+    /// pin is added or removed: the user keeps the whole timeout once the
+    /// last pin is gone.
+    func rearm() {
+        guard isArmed else { return }
         install()
     }
 
@@ -102,9 +114,11 @@ final class RehideMonitor {
     }
 
     /// Hides now, or once the open menu closes. A hide while a menu from a
-    /// shown item is open would pull the item out from under the menu.
+    /// shown item is open would pull the item out from under the menu. A
+    /// pin is an item the user put in the menu bar to click, so no rehide
+    /// condition takes it away: the icon ends it.
     private func requestHide() {
-        guard isArmed else { return }
+        guard isArmed, !hasPins() else { return }
         retry?.cancel()
         if RehidePolicy.isMenuOpen(MenuBarGeometry.openMenuFrames(), menuBar: .current) {
             retry = Task { [weak self] in

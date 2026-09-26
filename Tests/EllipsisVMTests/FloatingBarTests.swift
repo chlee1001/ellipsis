@@ -1,3 +1,4 @@
+// Modified by Chaehyeon Lee (2026): cover floating-bar pin interactions.
 import EllipsisCore
 import Foundation
 import Testing
@@ -44,17 +45,35 @@ struct FloatingBarTests {
         (try? guest.setting("clockZoneWidth")) != "150"
     }
 
-    /// Clicks A in the bar and returns once its menu is open.
-    private func openAFromTheBar() throws -> CGRect {
+    /// Pins A from the bar; returns once its item is in the menu bar and
+    /// the bar has closed.
+    private func pinAFromTheBar() throws {
         try showBar()
         let button = try #require(try guest.barButtons()?.first { $0.name == "FixtureA" })
         try guest.click(button.frame)
+        try guest.waitUntil("the bar closes") { try guest.barButtons() == nil }
+        try guest.waitUntil("A is pinned into the menu bar") { try guest.isDrawn(Fixture.a) }
+    }
+
+    /// Clicks the pinned item itself; returns once its menu is open.
+    private func openAPinnedMenu() throws -> CGRect {
+        let frame = try #require(try guest.frame(of: Fixture.a))
+        try guest.click(frame)
         var menu: CGRect?
         try guest.waitUntil("A's menu opens") {
             menu = try guest.openMenus().first { $0.minY < 42 }
             return menu != nil
         }
         return try #require(menu)
+    }
+
+    /// The icon ends a pin in two clicks: the first brings the bar back,
+    /// the second hides the set.
+    private func hideViaIcon() throws {
+        try guest.clickIcon()
+        try guest.waitUntil("the bar reopens for another pin") { try guest.barButtons() != nil }
+        try guest.clickIcon()
+        try guest.waitUntil("the set hides") { try guest.setting("isHiddenSetShown") == "0" }
     }
 
     @Test func aShortRegionCollapsesItemsInMenuBarMode() throws {
@@ -123,11 +142,12 @@ struct FloatingBarTests {
         try guest.expectStable("the bar stays") { try guest.barButtons() != nil }
     }
 
-    /// Without the Accessibility permission a click leaves the app's item
-    /// alone in the menu bar for the user to click. Runs only in a guest
-    /// where the app has no grant (before scripts/vm-test.sh gave it one);
-    /// the two tests after it need the grant.
-    @Test func clickOnAnAppWithoutPermissionShowsThatItemAlone() throws {
+    /// Without the Accessibility permission nothing can be read, so a pin
+    /// hides every other app at once: the one arrangement that always
+    /// leaves the pinned item on screen. Runs only in a guest where the
+    /// app has no grant (before scripts/vm-test.sh gave it one); the two
+    /// tests after it need the grant.
+    @Test func clickOnAnAppWithoutPermissionPinsIt() throws {
         try launchInBarMode()
         guard !hasAccessibilityGrant else { return }
         try bringWideFixtureToFront()
@@ -141,13 +161,14 @@ struct FloatingBarTests {
             return items.contains(Fixture.b) && items.isDisjoint(with: [Fixture.a, Fixture.c])
         }
         #expect(try !guest.hasOverflowButton())
-        try guest.clickIcon()
+        try hideViaIcon()
         try guest.waitUntil("the icon hides B again") { try !guest.appItems().contains(Fixture.b) }
     }
 
-    /// With the permission a click opens the app's menu; the normal
-    /// restriction returns when the menu closes.
-    @Test func clickOnAnAppOpensItsMenu() throws {
+    /// With the permission a click pins the app and closes the bar; the
+    /// item stays in the menu bar, its menu opens from a click on the
+    /// item, and the set hides from the icon.
+    @Test func clickOnAnAppPinsItAndItsMenuOpens() throws {
         try launchInBarMode()
         guard hasAccessibilityGrant else {
             Issue.record("Ellipsis has no Accessibility grant in this guest; run scripts/vm-test.sh")
@@ -155,30 +176,42 @@ struct FloatingBarTests {
         }
         try bringWideFixtureToFront()
         try guest.run("rm -f \(Fixture.markerPath(Fixture.a))")
-        let menuFrame = try openAFromTheBar()
+        try pinAFromTheBar()
         // Room for one more item: the front app's own item stays.
-        #expect(try guest.appItems().contains(Fixture.w))
+        #expect(try guest.isDrawn(Fixture.w))
+        let menuFrame = try openAPinnedMenu()
         try guest.click(CGRect(x: menuFrame.minX, y: menuFrame.minY + 6, width: menuFrame.width, height: 20))  // "Mark"
         try guest.waitUntil("Mark runs") { try !guest.run("ls \(Fixture.markerPath(Fixture.a)) 2>/dev/null || true").isEmpty }
-        try guest.waitUntil("the normal restriction returns") {
+        try guest.expectStable("A stays pinned after its menu closes") { try guest.isDrawn(Fixture.a) }
+        try hideViaIcon()
+        try guest.waitUntil("the set hides") {
             try guest.appItems().isDisjoint(with: Fixture.all) && guest.setting("isHiddenSetShown") == "0"
         }
     }
 
-    /// With no room for one more item, the item is drawn all the same: the
-    /// front app's own item gives way, collapsed by macOS or hidden by the
-    /// fallback restriction.
-    @Test func clickOnAnAppHidesTheOthersOnlyWhenItMust() throws {
+    /// A pin that does not fit hides every other app: the escalation from
+    /// the fit check, not macOS's own collapse. One pin fits next to the
+    /// icon with FixtureV frontmost; a second does not.
+    @Test func pinsHideTheOthersOnlyWhenTheyMust() throws {
         try launchInBarMode()
         guard hasAccessibilityGrant else {
             Issue.record("Ellipsis has no Accessibility grant in this guest; run scripts/vm-test.sh")
             return
         }
         try bringWideFixtureToFront(Fixture.widerName)
-        let menuFrame = try openAFromTheBar()
+        try pinAFromTheBar()
+        // One pin fits next to the icon; V's own item does not.
         #expect(try guest.isDrawn(Fixture.a))
         #expect(try !guest.isDrawn(Fixture.v))
-        try guest.click(menuFrame.offsetBy(dx: 0, dy: -menuFrame.height))  // the item above the menu closes it
+        // The second pin does not fit; the fit check hides every other app.
+        try guest.clickIcon()
+        try guest.waitUntil("the bar reopens") { try guest.barButtons() != nil }
+        let button = try #require(try guest.barButtons()?.first { $0.name == "FixtureB" })
+        try guest.click(button.frame)
+        try guest.waitUntil("B is drawn once every other app hides") { try guest.isDrawn(Fixture.b) }
+        #expect(try guest.isDrawn(Fixture.a))
+        #expect(try !guest.isDrawn(Fixture.v))
+        try hideViaIcon()
         try guest.waitUntil("V's item returns") { try guest.isDrawn(Fixture.v) }
     }
 }

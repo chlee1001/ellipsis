@@ -1,5 +1,7 @@
 # Test checklist
 
+Modified by Chaehyeon Lee (2026): added floating-bar pin checks.
+
 Numbers match the acceptance criteria in `docs/spec.md`. A row marked `vm` has a test in `Tests/EllipsisVMTests` that `mise run vm-test` runs in a Tart guest (see `docs/development.md`). The other rows are manual: run `scripts/run.sh` first and set the sets in Settings › Hidden and Settings › Always Hidden. They stay manual because they need the permission dialog (1 to 1b), the right-click menu (4a, 6c), the Settings window (5a, 8a, S1 to S9) or the release scripts (10, 11).
 
 | # | Steps | Expect | Result |
@@ -44,9 +46,11 @@ Numbers match the acceptance criteria in `docs/spec.md`. A row marked `vm` has a
 | F2 | Same, "In a bar below the menu bar" mode. Click the icon. | A bar under the icon lists the hidden apps. Nothing in the menu bar moves. Icon shows `‹`. | vm |
 | F3 | Option-click the icon in bar mode. | The bar adds the always-hidden apps. | vm |
 | F4 | Bar mode. Each rehide condition. | The bar closes. A click in the bar does not close it. | vm |
-| F5 | Bar mode, no Accessibility. Click an app in the bar. | That app's item appears alone in the menu bar; the bar closes. The icon hides it again. | vm |
-| F6 | Bar mode, with Accessibility. Click an app in the bar. | Its menu opens; the other visible items stay. Picking an item runs it; the set hides after the menu closes. | vm |
-| F6a | Same, with a front app whose menus leave room for one item only. | The other apps hide while the menu is open and return after. | vm |
+| F5 | Bar mode, no Accessibility. Click an app in the bar. | The app is pinned: its item appears alone in the menu bar, every other app hides at once, and the bar closes. The icon brings the bar back, then hides everything. | vm |
+| F6 | Bar mode, with Accessibility. Click an app in the bar. | The app is pinned: its item appears in the menu bar, the bar closes, and its menu opens from a click on the item. Picking an item runs it; the set hides from the icon. | vm |
+| F6a | Same, with a front app whose menus leave room for one item only. | A second pin that does not fit hides every other app; both pins are drawn. After the set hides, the front app's item returns. | vm |
+| F6b | Three pins, with a menu bar item that animates (a timer, a meter). Leave the pointer alone. | The pins stay. No rehide condition and no fit-check escalation takes them away. | Pass |
+| F6c | Pin an app that runs from outside `/Applications` (Synology Drive). | The bar marks it and says why. The other items stay: no escalation for an item macOS will not draw. | Pass |
 | F7 | On the notch MacBook, first launch. | "Show hidden items" defaults to the bar. Settings › General switches it. | Pass |
 | 10 | Release build: `spctl --assess`, `stapler validate`. | Both pass. | Phase 5 |
 | 11 | Clean checkout: `swift build`, every script. | No Xcode project needed. | Phase 5 |
