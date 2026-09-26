@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Modified by Chaehyeon Lee (2026): require an explicit Developer ID identity.
 # Sign build/Ellipsis.app with a Developer ID and the hardened runtime.
 # Usage: scripts/sign.sh [path/to/Ellipsis.app]
 # DEVELOPER_ID names the identity. Default: the first "Developer ID
@@ -10,11 +11,12 @@ app="${1:-$root/build/Ellipsis.app}"
 
 identity="${DEVELOPER_ID:-}"
 if [[ -z "$identity" ]]; then
-  identity="$(security find-identity -v -p codesigning |
-    sed -n 's/.*"\(Developer ID Application: [^"]*\)".*/\1/p' | head -1)"
+  echo "Set DEVELOPER_ID to your Developer ID Application identity." >&2
+  exit 1
 fi
-if [[ -z "$identity" ]]; then
-  echo "No Developer ID Application identity in the keychain. Set DEVELOPER_ID." >&2
+if [[ "$identity" != "Developer ID Application: "* ]] ||
+   ! security find-identity -v -p codesigning | grep -Fq '"'"$identity"'"'; then
+  echo "DEVELOPER_ID must name a valid Developer ID Application identity in the keychain." >&2
   exit 1
 fi
 # `security find-identity -v` lists a revoked certificate as valid and only

@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
+# Modified by Chaehyeon Lee (2026): fork identity and bundled licenses.
 # Assemble the app bundle from the SwiftPM binary and sign it.
 # A debug build is build/EllipsisDev.app with the identifier
-# au.ronny.EllipsisDev, so it sits next to the release app in /Applications
+# com.chlee1001.EllipsisDev, so it sits next to the release app in /Applications
 # and in the Accessibility list, with its own settings. A release build is
-# build/Ellipsis.app with au.ronny.Ellipsis; sign.sh signs it for release.
+# build/Ellipsis.app with com.chlee1001.Ellipsis; sign.sh signs it for release.
 # The signature here uses the first Developer ID Application identity in the
 # keychain, else the first Apple Development one, else ad hoc. An ad hoc
 # signature changes with every build, and macOS ties the Accessibility grant
@@ -20,7 +21,7 @@ bin="$(swift build -c "$config" --package-path "$root" --show-bin-path)/Ellipsis
 
 name="Ellipsis"
 [[ "$config" == "release" ]] || name="EllipsisDev"
-identifier="au.ronny.$name"
+identifier="com.chlee1001.$name"
 app="$root/build/$name.app"
 
 swift build -c "$config" --package-path "$root" >&2
@@ -30,6 +31,8 @@ mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp "$bin" "$app/Contents/MacOS/$name"
 cp "$root/Resources/Info.plist" "$app/Contents/Info.plist"
 cp "$root/Resources/AppIcon.icns" "$app/Contents/Resources/AppIcon.icns"
+cp "$root/LICENSE" "$app/Contents/Resources/LICENSE"
+cp "$root/.build/artifacts/sparkle/Sparkle/LICENSE" "$app/Contents/Resources/Sparkle-LICENSE"
 mkdir -p "$app/Contents/Frameworks"
 ditto "$root/.build/artifacts/sparkle/Sparkle/Sparkle.xcframework/macos-arm64_x86_64/Sparkle.framework" \
   "$app/Contents/Frameworks/Sparkle.framework"

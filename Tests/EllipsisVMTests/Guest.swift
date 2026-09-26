@@ -1,3 +1,4 @@
+// Modified by Chaehyeon Lee (2026): fork bundle IDs for guest fixtures.
 import EllipsisCore
 import Foundation
 import Testing
@@ -9,7 +10,7 @@ struct Guest: Sendable {
     static let name = ProcessInfo.processInfo.environment["ELLIPSIS_VM"]
     static var isConfigured: Bool { name != nil }
 
-    static let appIdentifier = "au.ronny.EllipsisDev"
+    static let appIdentifier = "com.chlee1001.EllipsisDev"
     static let appName = "EllipsisDev"
 
     struct CommandFailure: Error, CustomStringConvertible {
@@ -319,9 +320,9 @@ struct Guest: Sendable {
 }
 
 enum Fixture {
-    static let a = "au.ronny.EllipsisFixture.A"
-    static let b = "au.ronny.EllipsisFixture.B"
-    static let c = "au.ronny.EllipsisFixture.C"
+    static let a = "com.chlee1001.EllipsisFixture.A"
+    static let b = "com.chlee1001.EllipsisFixture.B"
+    static let c = "com.chlee1001.EllipsisFixture.C"
     static let all = [a, b, c]
     /// A regular app with seven menus: frontmost, it leaves about 240
     /// points for status items on the guest's display. Room for the icon,
@@ -330,8 +331,8 @@ enum Fixture {
     /// Nine menus, about 113 points: room for the icon and one fixture
     /// (106), not for the app's own item as well (176).
     static let widerName = "FixtureV"
-    static let w = "au.ronny.EllipsisFixture.W"
-    static let v = "au.ronny.EllipsisFixture.V"
+    static let w = "com.chlee1001.EllipsisFixture.W"
+    static let v = "com.chlee1001.EllipsisFixture.V"
 
     static func name(_ identifier: String) -> String {
         "Fixture" + identifier.split(separator: ".").last!

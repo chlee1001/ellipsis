@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Modified by Chaehyeon Lee (2026): independent bundle identity and update signing. -->
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
@@ -9,7 +10,7 @@
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
-	<string>au.ronny.Ellipsis</string>
+	<string>com.chlee1001.Ellipsis</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -33,8 +34,8 @@
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>SUFeedURL</key>
-	<string>https://github.com/ronny/ellipsis/releases/latest/download/appcast.xml</string>
+	<string>https://github.com/chlee1001/ellipsis/releases/latest/download/appcast.xml</string>
 	<key>SUPublicEDKey</key>
-	<string>nZmV9ayuPgQBVqfYy1S5/s5QwvQOB4euji6pXhIHWdc=</string>
+	<string>mN0nVFMiFCIbp55+0v6THJ+u1hjn1ewwr00AgzDaBtg=</string>
 </dict>
 </plist>

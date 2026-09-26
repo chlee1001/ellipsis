@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
+# Modified by Chaehyeon Lee (2026): explicit notary profile.
 # Notarize a signed build/Ellipsis.app and staple the ticket.
 # Usage: scripts/notarize.sh [path/to/Ellipsis.app]
-# NOTARY_PROFILE names a notarytool keychain profile (default: ellipsis).
+# NOTARY_PROFILE names your notarytool keychain profile.
 # Create it once:
 #   xcrun notarytool store-credentials ellipsis \
 #     --apple-id you@example.com --team-id TEAMID --password app-specific-password
@@ -9,7 +10,7 @@ set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 app="${1:-$root/build/Ellipsis.app}"
-profile="${NOTARY_PROFILE:-ellipsis}"
+profile="${NOTARY_PROFILE:?Set NOTARY_PROFILE to your notarytool keychain profile}"
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
