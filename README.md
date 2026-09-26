@@ -1,5 +1,8 @@
 # Ellipsis
 
+Modified by Chaehyeon Lee (2026): floating-bar pins and pin fit handling.
+Original project: [ronny/ellipsis](https://github.com/ronny/ellipsis).
+
 Ellipsis hides selected menu bar items on macOS 27. Click its icon to show them. Click again, or wait, to hide them again.
 
 ## Requirements
@@ -40,4 +43,8 @@ See [docs/development.md](docs/development.md) for how to build, test and releas
 
 ## License
 
-Ellipsis is under the Apache License 2.0. See [LICENSE](LICENSE).
+Based on [ronny/ellipsis](https://github.com/ronny/ellipsis) by Ronny Haryanto.
+Chaehyeon Lee modified the floating bar to pin menu bar items in 2026.
+These changes are noted in the modified files. The original copyright notice
+is retained; Ellipsis remains under the Apache License 2.0. See [LICENSE](LICENSE)
+and [CREDITS.md](CREDITS.md).

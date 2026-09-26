@@ -2,12 +2,21 @@
 
 Ellipsis itself is under the Apache License 2.0. See [LICENSE](LICENSE).
 
-This file lists everything else: what ships inside the app, and what was read
+## Origin and modifications
+
+This repository is based on [ronny/ellipsis](https://github.com/ronny/ellipsis)
+by Ronny Haryanto. The original Apache 2.0 license and copyright notice
+remain in [LICENSE](LICENSE). Chaehyeon Lee modified the floating bar to pin
+menu bar items and changed the pin fit and rehide behavior in 2026. Modified
+upstream files carry individual change notices.
+
+The following lists other work that ships inside the app, and what was read
 to learn how macOS 27 hides menu bar items.
 
 ## Ships inside the application
 
-Nothing from a third party. The app icon is three circles on a gradient, drawn
+Apart from the original Ellipsis source noted above, no third-party code or
+assets were added. The app icon is three circles on a gradient, drawn
 by `scripts/make-icon-art.swift`. The menu bar icons are the SF Symbols
 `ellipsis` and `chevron.left`, used under the Apple SDK licence.
 
