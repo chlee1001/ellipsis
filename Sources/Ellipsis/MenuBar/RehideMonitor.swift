@@ -1,3 +1,4 @@
+// Modified by Chaehyeon Lee (2026): keep pinned items visible during rehide checks.
 import AppKit
 import EllipsisCore
 

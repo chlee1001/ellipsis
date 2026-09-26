@@ -1,3 +1,4 @@
+// Modified by Chaehyeon Lee (2026): added pin indicators and reachability hints.
 import AppKit
 import SwiftUI
 

@@ -1,3 +1,4 @@
+// Modified by Chaehyeon Lee (2026): added temporary floating-bar pins and fit checks.
 import AppKit
 import EllipsisCore
 import Observation

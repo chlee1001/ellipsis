@@ -1,3 +1,4 @@
+// Modified by Chaehyeon Lee (2026): cover floating-bar pin interactions.
 import EllipsisCore
 import Foundation
 import Testing

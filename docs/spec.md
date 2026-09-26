@@ -1,5 +1,7 @@
 # Ellipsis — specification
 
+Modified by Chaehyeon Lee (2026): specified temporary floating-bar pins.
+
 Ellipsis is a macOS menu bar item manager. It hides and shows menu bar items of other apps. It is a stripped-down version of [Ice](https://github.com/jordanbaird/Ice) and [Bartender](https://www.macbartender.com) for macOS 27 (Golden Gate).
 
 ## Goals

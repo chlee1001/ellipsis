@@ -1,5 +1,7 @@
 # Ellipsis — implementation plan
 
+Modified by Chaehyeon Lee (2026): documented floating-bar pin implementation.
+
 Each phase ends with a jj change that builds and runs.
 
 ## Phase 0: Spike — done

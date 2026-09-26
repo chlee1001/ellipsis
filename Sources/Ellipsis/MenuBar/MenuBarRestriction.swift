@@ -1,3 +1,4 @@
+// Modified by Chaehyeon Lee (2026): added allow-list reachability checks for pins.
 import AppKit
 
 enum MenuBarRestrictionError: LocalizedError {

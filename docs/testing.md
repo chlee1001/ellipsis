@@ -1,5 +1,7 @@
 # Test checklist
 
+Modified by Chaehyeon Lee (2026): added floating-bar pin checks.
+
 Numbers match the acceptance criteria in `docs/spec.md`. A row marked `vm` has a test in `Tests/EllipsisVMTests` that `mise run vm-test` runs in a Tart guest (see `docs/development.md`). The other rows are manual: run `scripts/run.sh` first and set the sets in Settings › Hidden and Settings › Always Hidden. They stay manual because they need the permission dialog (1 to 1b), the right-click menu (4a, 6c), the Settings window (5a, 8a, S1 to S9) or the release scripts (10, 11).
 
 | # | Steps | Expect | Result |
